@@ -30,6 +30,8 @@
 
 
 #include <cstdint>
+#include <string>
+#include <vector>
 
 
 /* -- debug ----------------------------------------------------------------- */
@@ -161,8 +163,8 @@ constexpr int G_MIDI_API_ALSA = 0x02;  // 0000 0010
 constexpr int   G_DEFAULT_SOUNDDEV_OUT        = 0;      // FIXME - please override with rtAudio::getDefaultDevice (or similar)
 constexpr int   G_DEFAULT_SOUNDDEV_IN         = -1;     // no recording by default: input disabled
 constexpr int   G_DEFAULT_MIDI_SYSTEM         = 0;
-constexpr int   G_DEFAULT_MIDI_PORT_IN        = -1;
-constexpr int   G_DEFAULT_MIDI_PORT_OUT       = -1;
+const std::vector<std::string> G_DEFAULT_MIDI_PORTS_IN  = {};	// Empty
+const std::vector<std::string> G_DEFAULT_MIDI_PORTS_OUT = {};	// Empty
 constexpr int   G_DEFAULT_SAMPLERATE          = 44100;
 constexpr int   G_DEFAULT_BUFSIZE             = 1024;
 constexpr int   G_DEFAULT_BIT_DEPTH           = 32;     // float
@@ -228,7 +230,6 @@ constexpr int G_PATCH_UNSUPPORTED = -2;
 constexpr int G_PATCH_UNREADABLE  = -1;
 constexpr int G_PATCH_INVALID     =  0;
 constexpr int G_PATCH_OK          =  1;
-
 
 
 /* -- midimap signals ------------------------------------------------------- */
@@ -400,8 +401,8 @@ constexpr auto CONF_KEY_DELAY_COMPENSATION            = "delay_compensation";
 constexpr auto CONF_KEY_LIMIT_OUTPUT                  = "limit_output";
 constexpr auto CONF_KEY_RESAMPLE_QUALITY              = "resample_quality";
 constexpr auto CONF_KEY_MIDI_SYSTEM                   = "midi_system";
-constexpr auto CONF_KEY_MIDI_PORT_OUT                 = "midi_port_out";
-constexpr auto CONF_KEY_MIDI_PORT_IN                  = "midi_port_in";
+constexpr auto CONF_KEY_MIDI_PORT_OUT_NAMES           = "midi_port_out_names";
+constexpr auto CONF_KEY_MIDI_PORT_IN_NAMES            = "midi_port_in_names";
 constexpr auto CONF_KEY_MIDIMAP_PATH                  = "midimap_path";
 constexpr auto CONF_KEY_LAST_MIDIMAP                  = "last_midimap";
 constexpr auto CONF_KEY_MIDI_SYNC                     = "midi_sync";

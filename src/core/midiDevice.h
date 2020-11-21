@@ -25,51 +25,18 @@
  * -------------------------------------------------------------------------- */
 
 
-#ifndef G_UTILS_VECTOR_H
-#define G_UTILS_VECTOR_H
+#ifndef G_MIDI_DEVICE_H
+#define G_MIDI_DEVICE_H
 
-
-#include <vector>
-#include <algorithm>
-#include <functional>
-
+#include "core/midiMsg.h"
 
 namespace giada {
-namespace u {
-namespace vector 
+namespace m {
+namespace midiDevice
 {
-template <typename T, typename P>
-std::size_t indexOf(T& v, const P& p)
-{
-	return std::distance(v.begin(), std::find(v.begin(), v.end(), p));
-}
+void init();
+void midiReceive(const MidiMsg& mm);
+}}} // giada::m::midiDevice::
 
-// -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   
-
-template <typename T, typename F>
-void removeIf(T& v, F&& func)
-{
-    v.erase(std::remove_if(v.begin(), v.end(), func), v.end());
-}
-
-// -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   
-
-template <typename T, typename V>
-void remove(T& v, V val)
-{
-    v.erase(std::remove(v.begin(), v.end(), val), v.end());
-}
-
-// -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   
-
-template <typename T, typename V>
-bool has(T& v, V val)
-{
-    return (std::find(v.begin(), v.end(), val) != v.end());
-}
-
-// -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   
-
-}}}  // giada::u::vector::
 
 #endif
