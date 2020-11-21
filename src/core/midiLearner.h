@@ -25,51 +25,30 @@
  * -------------------------------------------------------------------------- */
 
 
-#ifndef G_UTILS_VECTOR_H
-#define G_UTILS_VECTOR_H
+#ifndef G_MIDI_LEARNER_H
+#define G_MIDI_LEARNER_H
 
 
-#include <vector>
-#include <algorithm>
 #include <functional>
-
+#include "midiMsg.h"
 
 namespace giada {
-namespace u {
-namespace vector 
+namespace m {
+namespace midiLearner
 {
-template <typename T, typename P>
-std::size_t indexOf(T& v, const P& p)
-{
-	return std::distance(v.begin(), std::find(v.begin(), v.end(), p));
-}
+void startChannelLearn(int param, ID channelId, std::function<void()> f);
+void startMasterLearn (int param, std::function<void()> f);
+void stopLearn();
+void clearMasterLearn (int param, std::function<void()> f);
+void clearChannelLearn(int param, ID channelId, std::function<void()> f);
+#ifdef WITH_VST
+void startPluginLearn (int paramIndex, ID pluginId, std::function<void()> f);
+void clearPluginLearn (int paramIndex, ID pluginId, std::function<void()> f);
+#endif
 
-// -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   
+void midiReceive(const MidiMsg& mm);
 
-template <typename T, typename F>
-void removeIf(T& v, F&& func)
-{
-    v.erase(std::remove_if(v.begin(), v.end(), func), v.end());
-}
+}}} // giada::m::midiLearner::
 
-// -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   
-
-template <typename T, typename V>
-void remove(T& v, V val)
-{
-    v.erase(std::remove(v.begin(), v.end(), val), v.end());
-}
-
-// -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   
-
-template <typename T, typename V>
-bool has(T& v, V val)
-{
-    return (std::find(v.begin(), v.end(), val) != v.end());
-}
-
-// -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   
-
-}}}  // giada::u::vector::
 
 #endif

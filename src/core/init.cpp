@@ -61,7 +61,11 @@
 #include "core/recorder.h"
 #include "core/recorderHandler.h"
 #include "core/recManager.h"
+#include "core/midiController.h"
+#include "core/midiDevice.h"
 #include "core/midiMapConf.h"
+#include "core/midiPorts.h"
+#include "core/midiSignalCb.h"
 #include "core/kernelMidi.h"
 #include "core/kernelAudio.h"
 #include "init.h"
@@ -127,9 +131,11 @@ void initAudio_()
 
 void initMIDI_()
 {
-	kernelMidi::setApi(conf::conf.midiSystem);
-	kernelMidi::openOutDevice(conf::conf.midiPortOut);
-	kernelMidi::openInDevice(conf::conf.midiPortIn);	
+	midiPorts::init();
+	kernelMidi::init();
+	midiSignalCb::init();
+	midiController::init();
+	midiDevice::init();
 }
 
 

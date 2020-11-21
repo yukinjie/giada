@@ -31,6 +31,7 @@
 #include "core/conf.h"
 #include "core/midiMapConf.h"
 #include "core/kernelMidi.h"
+#include "core/midiPorts.h"
 #include "utils/gui.h"
 #include "gui/elems/basics/box.h"
 #include "gui/elems/basics/choice.h"
@@ -82,7 +83,9 @@ geTabMidi::geTabMidi(int X, int Y, int W, int H)
 
 void geTabMidi::fetchOutPorts()
 {
-	if (m::kernelMidi::countOutPorts() == 0) {
+	std::vector<std::string> ports = m::midiPorts::getOutDevices();
+
+	if (ports.empty()) {
 		portOut->add("-- no ports found --");
 		portOut->value(0);
 		portOut->deactivate();
@@ -91,10 +94,12 @@ void geTabMidi::fetchOutPorts()
 
 		portOut->add("(disabled)");
 
-		for (unsigned i=0; i<m::kernelMidi::countOutPorts(); i++)
-			portOut->add(u::gui::removeFltkChars(m::kernelMidi::getOutPortName(i)).c_str());
+		for (auto& p : ports)
+			portOut->add(u::gui::removeFltkChars(p).c_str());
 
-		portOut->value(m::conf::conf.midiPortOut+1);    // +1 because midiPortOut=-1 is '(disabled)'
+	// TODO - in new GUI :)
+		//int i = m::midiPorts::getOutDeviceIndex(m::conf::conf.midiPortOutNames.at(0));
+		//portOut->value(i+1);
 	}
 }
 
@@ -103,7 +108,9 @@ void geTabMidi::fetchOutPorts()
 
 void geTabMidi::fetchInPorts()
 {
-	if (m::kernelMidi::countInPorts() == 0) {
+	std::vector<std::string> ports = m::midiPorts::getInDevices();
+
+	if (ports.empty()) {
 		portIn->add("-- no ports found --");
 		portIn->value(0);
 		portIn->deactivate();
@@ -112,10 +119,12 @@ void geTabMidi::fetchInPorts()
 
 		portIn->add("(disabled)");
 
-		for (unsigned i=0; i<m::kernelMidi::countInPorts(); i++)
-			portIn->add(u::gui::removeFltkChars(m::kernelMidi::getInPortName(i)).c_str());
+		for (auto& p : ports)
+			portIn->add(u::gui::removeFltkChars(p).c_str());
 
-		portIn->value(m::conf::conf.midiPortIn+1);    // +1 because midiPortIn=-1 is '(disabled)'
+	// TODO - in new GUI :)
+		//int i = m::midiPorts::getInDeviceIndex(m::conf::conf.midiPortInNames.at(0));
+		//portIn->value(i+1);
 	}
 }
 
@@ -125,7 +134,7 @@ void geTabMidi::fetchInPorts()
 
 void geTabMidi::fetchMidiMaps()
 {
-	if (m::midimap::maps.size() == 0) {
+	if (m::midimap::maps.empty()) {
 		midiMap->add("(no MIDI maps available)");
 		midiMap->value(0);
 		midiMap->deactivate();
@@ -162,9 +171,13 @@ void geTabMidi::save()
 	else if (text == "OSX Core MIDI")
 		m::conf::conf.midiSystem = RtMidi::MACOSX_CORE;
 
-	m::conf::conf.midiPortOut = portOut->value()-1;   // -1 because midiPortOut=-1 is '(disabled)'
-	m::conf::conf.midiPortIn  = portIn->value()-1;    // -1 because midiPortIn=-1 is '(disabled)'
-	m::conf::conf.midiMapPath = m::midimap::maps.size() == 0 ? "" : midiMap->text(midiMap->value());
+	// TODO: Saves only one input and output port with old GUI
+	// Multiple port support is ready and tested on json side.
+	m::conf::conf.midiPortOutNames.clear();
+	m::conf::conf.midiPortInNames.clear();
+	m::conf::conf.midiPortOutNames.push_back(m::midiPorts::getOutDeviceName(portOut->value()-1));
+	m::conf::conf.midiPortInNames.push_back(m::midiPorts::getInDeviceName(portIn->value()-1)); 
+	m::conf::conf.midiMapPath     = m::midimap::maps.size() == 0 ? "" : midiMap->text(midiMap->value());
 
 	if      (sync->value() == 0)
 		m::conf::conf.midiSync = MIDI_SYNC_NONE;
@@ -182,19 +195,19 @@ void geTabMidi::fetchSystems()
 {
 #if defined(__linux__)
 
-	if (m::kernelMidi::hasAPI(RtMidi::LINUX_ALSA))
+	if (m::midiPorts::hasAPI(RtMidi::LINUX_ALSA))
 		system->add("ALSA");
-	if (m::kernelMidi::hasAPI(RtMidi::UNIX_JACK))
+	if (m::midiPorts::hasAPI(RtMidi::UNIX_JACK))
 		system->add("Jack");
 
 #elif defined(__FreeBSD__)
 
-	if (m::kernelMidi::hasAPI(RtMidi::UNIX_JACK))
+	if (m::midiPorts::hasAPI(RtMidi::UNIX_JACK))
 		system->add("Jack");
 
 #elif defined(_WIN32)
 
-	if (m::kernelMidi::hasAPI(RtMidi::WINDOWS_MM))
+	if (m::midiPorts::hasAPI(RtMidi::WINDOWS_MM))
 		system->add("Multimedia MIDI");
 
 #elif defined (__APPLE__)
