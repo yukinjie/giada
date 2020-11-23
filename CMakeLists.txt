@@ -293,6 +293,8 @@ list(APPEND SOURCES
 	src/gui/elems/config/tabBehaviors.cpp  
 	src/gui/elems/config/tabPlugins.h      
 	src/gui/elems/config/tabPlugins.cpp    
+	src/gui/elems/config/midiConfigElement.h      
+	src/gui/elems/config/midiConfigElement.cpp    
 	src/gui/elems/basics/scroll.h          
 	src/gui/elems/basics/scroll.cpp        
 	src/gui/elems/basics/pack.h            
