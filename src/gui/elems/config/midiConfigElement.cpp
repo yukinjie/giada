@@ -39,7 +39,8 @@
 #include "gui/dialogs/pluginList.h"
 #include "gui/dialogs/pluginWindowGUI.h"
 #include "gui/dialogs/pluginWindow.h"
-#include "pluginElement.h"
+#include "gui/elems/plugin/pluginElement.h"
+#include "gui/elems/config/midiConfigElement.h"
 
 
 namespace giada {
