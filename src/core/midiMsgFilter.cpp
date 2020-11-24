@@ -192,7 +192,7 @@ void MidiMsgFilter::dump(int level) const{
 
 	unsigned int fl = m_mask.size();
 
-	u::log::print("%sTemplate:", tabs.c_str());
+	u::log::print("%sTemplate:", tabs);
 
 	for (unsigned int i = 0; i < fl; i++) {
 		u::log::print("0x%02X ", m_template.at(i));
@@ -205,22 +205,22 @@ void MidiMsgFilter::dump(int level) const{
 			m_allow_longer_msg ? "Allowed" : "Disallowed");
 
 	u::log::print(";\tFrom sender:: %s\n",
-			m_sender.empty() ? "(Any)" : m_sender.c_str());
+			m_sender.empty() ? "(Any)" : m_sender);
 
 	int nextLevel;
 	for (auto& mbo : m_bin_ops) {
 		nextLevel = (mbo.mmf->m_bin_ops.empty() ? level : level + 1);
 		switch (mbo.bo) {
 			case MMF_AND:
-				u::log::print("%sAND\n", tabs.c_str());
+				u::log::print("%sAND\n", tabs);
 				mbo.mmf->dump(nextLevel);
 				break;
 			case MMF_OR:
-				u::log::print("%sOR\n", tabs.c_str());
+				u::log::print("%sOR\n", tabs);
 				mbo.mmf->dump(nextLevel);
 				break;
 			case MMF_NOT:
-				u::log::print("%sNOT\n", tabs.c_str());
+				u::log::print("%sNOT\n", tabs);
 		}
 	}
 }

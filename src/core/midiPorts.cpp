@@ -103,11 +103,11 @@ void init()
 
 	u::log::print("[MP::init] Available input devices:\n");
 	for (std::string d : getInDevices(false)) {
-		u::log::print("           %s\n", d.c_str());
+		u::log::print("           %s\n", d);
 	}
 	u::log::print("[MP::init] Available output devices:\n");
 	for (std::string d : getOutDevices(false)) {
-		u::log::print("           %s\n", d.c_str());
+		u::log::print("           %s\n", d);
 	}
 }
 
@@ -157,7 +157,7 @@ std::vector<std::string> getOutDevices(bool full) {
 	}
 	catch (const RtMidiError& error) {
 		u::log::print("[MP::getOutDevices] RtMidiError: %s\n",
-						error.getMessage().c_str());
+							error.getMessage());
 	}
 
 	return output;
@@ -189,7 +189,7 @@ std::vector<std::string> getInDevices(bool full) {
 	}
 	catch (const RtMidiError& error) {
 		u::log::print("[MP::getInDevices] RtMidiError: %s\n",
-						error.getMessage().c_str());
+							error.getMessage());
 	}
 
 	return output;
@@ -250,7 +250,7 @@ int openOutPort(const std::string& port) {
 	// Let's check if this port is in the map, possibly already open //
 	if (outPorts_.count(port) > 0) {
 		// This port already exists in the map
-// JAck always return 0 in RtMidi before 4.0.0
+// Jack always return 0 in RtMidi before 4.0.0
 // Can be uncommented after RtMidi upgrade - TODO
 		//if (outPorts_[port]->isPortOpen()) {
 		
@@ -270,7 +270,7 @@ int openOutPort(const std::string& port) {
 		}
 		catch (const RtMidiError& error) {
 			u::log::print("[MP::openOutPort] RtMidiError: %s\n",
-						error.getMessage().c_str());
+							error.getMessage());
 			return -2;
 		}
 	}
@@ -278,15 +278,13 @@ int openOutPort(const std::string& port) {
 	// Let's open this port
 	try {
 		outPorts_[port]->openPort(index, port);
-		u::log::print("[MP::openOutPort] MIDI port \"%s\" open\n",
-							port.c_str());
+		u::log::print("[MP::openOutPort] MIDI port \"%s\" open\n", port);
 		sendMidiLightningInitMsgs_();
 		return 1;
 	}
 	catch (const RtMidiError& error) {
 		u::log::print("[MP::openOutPort] unable to open output port "
-							"#%d (%s): %s\n",
-			index, port.c_str(), error.getMessage().c_str());
+			"#%d (%s): %s\n", index, port, error.getMessage());
 		return -3;
 	}
 
@@ -326,7 +324,7 @@ int openInPort(const std::string& port) {
 		}
 		catch (const RtMidiError& error) {
 			u::log::print("[MP::openInPort] RtMidiError: %s\n",
-						error.getMessage().c_str());
+							error.getMessage());
 			return -2;
 		}
 	}
@@ -342,14 +340,12 @@ int openInPort(const std::string& port) {
 		inPorts_[port]->setCallback(&callback_, p);
 		inPorts_[port]->openPort(index, port);
 		inPorts_[port]->ignoreTypes(false, false, false);
-		u::log::print("[MP::openInPort] MIDI port \"%s\" open\n",
-							port.c_str());
+		u::log::print("[MP::openInPort] MIDI port \"%s\" open\n", port);
 		return 1;
 	}
 	catch (const RtMidiError& error) {
 		u::log::print("[MP::openInPort] unable to open input port "
-							"#%d (%s): %s\n",
-			index, port.c_str(), error.getMessage().c_str());
+			"#%d (%s): %s\n", index, port, error.getMessage());
 		return -3;
 	}
 
@@ -374,8 +370,7 @@ int closeOutPort(const std::string& port) {
 	if (outPorts_.count(port) > 0) {
 		// RtMidi port destructor closes connections on its own
 		outPorts_.erase(port);
-		u::log::print("[MP::closeOutPort] Port \"%s\" closed.\n",
-							port.c_str());
+		u::log::print("[MP::closeOutPort] Port \"%s\" closed.\n", port);
 		return 0;
 	}
 	return 2;
@@ -401,8 +396,7 @@ int closeInPort(const std::string& port) {
 	if (inPorts_.count(port) > 0) {
 		// RtMidi port destructor closes connections on its own
 		inPorts_.erase(port);
-		u::log::print("[MP::closeInPort] Port \"%s\" closed.\n",
-							port.c_str());
+		u::log::print("[MP::closeInPort] Port \"%s\" closed.\n", port);
 		return 0;
 	}
 	return 2;
@@ -445,7 +439,7 @@ std::vector<std::string> getInPorts(bool addr) {
 void midiReceive(const MidiMsg& mm, const std::string& recipient)
 {
 	u::log::print("[MP::midiReceive] Sending message to \"%s\"... ",
-						recipient.c_str());
+								recipient);
 
 	// Every time a message is sent, a port status is checked first.
 	int status = openOutPort(recipient);
@@ -462,8 +456,7 @@ void midiReceive(const MidiMsg& mm, const std::string& recipient)
 	}
 	else {
 		u::log::print("[MP::midiReceive] Sending message to \"%s\" \
-		failed (openOutPort returned %d).", recipient.c_str(),
-								status);
+		failed (openOutPort returned %d).", recipient, status);
 	}
 }
 

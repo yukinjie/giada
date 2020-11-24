@@ -133,7 +133,7 @@ void MidiMsg::dump() const {
 	for (auto b : m_message) {
 		u::log::print("0x%X ", b);
 	}
-	u::log::print("; Sent by: %s\n", m_sender.c_str());
+	u::log::print("; Sent by: %s\n", m_sender);
 
 }
 

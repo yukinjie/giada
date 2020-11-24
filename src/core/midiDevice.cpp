@@ -95,7 +95,7 @@ void processMaster_(const MidiEvent& midiEvent)
 
 void init() {
 	midiDispatcher::registerRule(midiPorts::getInPorts(1), MMF_NOTEONOFFCC,
-							"m;midiDevice");
+								"m;midiDevice");
 }
 
 /* -------------------------------------------------------------------------- */
@@ -103,7 +103,7 @@ void init() {
 void midiReceive(const MidiMsg& mm)
 {
 	u::log::print("[MDe::midiReceive] Received message from %s.\n",
-						mm.getMessageSender().c_str());
+							mm.getMessageSender());
 	MidiEvent midiEvent(mm.getByte(0), mm.getByte(1), mm.getByte(2));
 	processMaster_(midiEvent);
 }

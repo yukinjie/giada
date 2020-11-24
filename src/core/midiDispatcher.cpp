@@ -67,7 +67,7 @@ std::mutex DT_mutex;
 void forward_(const MidiMsg& mm, const std::string r){
 
 	u::log::print("[MDi::forward_] Forwarding message from %s to: %s...\n",
-				mm.getMessageSender().c_str(), r.c_str());
+				mm.getMessageSender(), r);
 
 	// Addresses are a semicolon delimited strings.
 	// First part is either:
@@ -134,8 +134,7 @@ void registerRule(const std::string& s, const MidiMsgFilter& mmf,
 						const std::string& r, bool wl){
 	std::lock_guard lg(DT_mutex);
 	dispatchTable.push_back(DispatchTableItem(s, mmf, r, wl));
-	u::log::print("[MDi::reg] Registered new DTI (receiver %s).\n", 
-								r.c_str());
+	u::log::print("[MDi::reg] Registered new DTI (receiver %s).\n", r);
 	mmf.dump();
 }
 
@@ -145,8 +144,7 @@ void registerRule(const std::vector<std::string>& s, const MidiMsgFilter& mmf,
 						const std::string& r, bool wl){
 	std::lock_guard lg(DT_mutex);
 	dispatchTable.push_back(DispatchTableItem(s, mmf, r, wl));
-	u::log::print("[MDi::reg] Registered new DTI (receiver %s).\n",
-								r.c_str());
+	u::log::print("[MDi::reg] Registered new DTI (receiver %s).\n", r);
 	mmf.dump();
 }
 
@@ -156,8 +154,7 @@ void registerExRule(const std::string& s, const MidiMsgFilter& mmf,
 						const std::string& r, bool wl){
 	std::lock_guard lg(DTE_mutex);
 	dispatchTableEx.push_front(DispatchTableItem(s, mmf, r, wl));
-	u::log::print("[MDi::regEx] Registered new DTIEx (receiver %s).\n",
-								r.c_str());
+	u::log::print("[MDi::regEx] Registered new DTIEx (receiver %s).\n", r);
 	mmf.dump();
 }
 
@@ -167,8 +164,7 @@ void registerExRule(const std::vector<std::string>& s,
 		const MidiMsgFilter& mmf, const std::string& r, bool wl){
 	std::lock_guard lg(DTE_mutex);
 	dispatchTableEx.push_front(DispatchTableItem(s, mmf, r, wl));
-	u::log::print("[MDi::regEx] Registered new DTIEx (receiver %s).\n",
-								r.c_str());
+	u::log::print("[MDi::regEx] Registered new DTIEx (receiver %s).\n", r);
 	mmf.dump();
 }
 
@@ -178,7 +174,7 @@ void unregisterRule(const std::string& r){
 	std::lock_guard lg(DT_mutex);
 	dispatchTable.remove_if([&] (DispatchTableItem er)
 						{return er.isReceiver(r);});
-	u::log::print("[MDi::unreg] Unregistering receiver %s\n", r.c_str());
+	u::log::print("[MDi::unreg] Unregistering receiver %s\n", r);
 }
 
 //   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
@@ -187,8 +183,7 @@ void unregisterExRule(const std::string& r){
 	std::lock_guard lg(DTE_mutex);
 	dispatchTableEx.remove_if([&] (DispatchTableItem er)
 						{return er.isReceiver(r);});
-	u::log::print("[MDi::unregEx] Unregistering receiver %s\n",
-								r.c_str());
+	u::log::print("[MDi::unregEx] Unregistering receiver %s\n", r);
 }
 
 //   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
