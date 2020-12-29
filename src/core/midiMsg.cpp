@@ -153,7 +153,7 @@ void from_json(nl::json& j, MidiMsg& mm) {
 //-------------------------- PRIVATE MEMBER FUNCTIONS --------------------------
 
 void MidiMsg::_fixVelocityZero() {
-	if (MMF_NOTEON.check(*this) && (getByte(2) == 0)) {
+	if ((MMF_NOTEON << *this) && (getByte(2) == 0)) {
 		m_message[0] &= 0b11101111;
 		m_message[2] &= 64;
 	}
@@ -162,7 +162,7 @@ void MidiMsg::_fixVelocityZero() {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 void MidiMsg::_fixNoteOffValue() {
-	if (MMF_NOTEOFF.check(*this)) {
+	if (MMF_NOTEOFF << *this) {
 		if (getValue() == 0) {
 			m_message[2] = 64;
 		}

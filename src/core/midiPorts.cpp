@@ -464,7 +464,9 @@ void midiReceive(const MidiMsg& mm, const std::string& recipient)
 /* -------------------------------------------------------------------------- */
 
 std::string shortName(const std::string& port) {
-
+	// Experimental feature, not tested
+	//
+	
 	std::string o = port;
 
 	// Remove non-alphanumeric chars

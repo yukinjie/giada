@@ -154,6 +154,7 @@ void processChannels_(const MidiEvent& midiEvent)
 /* -------------------------------------------------------------------------- */
 
 void init(){
+	// TODO: Should capture only learned messages. Or maybe not?
 	midiDispatcher::registerRule(midiPorts::getInPorts(1), MMF_NOTEONOFFCC,
 							"m;midiController");
 }

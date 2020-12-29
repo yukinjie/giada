@@ -25,7 +25,6 @@
  * -------------------------------------------------------------------------- */
 
 #include <functional>
-#include <map>
 #include <cmath>
 #include "utils/log.h"
 #include "core/model/model.h"
@@ -41,9 +40,6 @@ namespace midiLearner
 {
 namespace
 {
-// Remembers values of first occurences of CC, so it's easier to tell
-// which one changed and how much
-std::map<MidiMsg, int> ccMon;
 
 std::function<void(MidiEvent)> learnCb_  = nullptr;
 
@@ -184,7 +180,6 @@ void stopLearn()
 {
 	midiDispatcher::unregisterExRule("m;midiLearner");
 	learnCb_ = nullptr;
-	ccMon.clear();
 	u::log::print("[ML::stopLearn] Done.\n");
 }
 
@@ -228,24 +223,12 @@ void midiReceive(const MidiMsg& mm)
 		return;
 	}
 
-	// CCs are accepted only if their value changed by 32 or more.
-	// The purpose is to filter out possible pot jitter
-	// and to make it easier to learn coupled controllers, like XY pads
+	// TODO: CC jitter filter
 
-	MidiMsg noval = mm.noValue();
-	if (MMF_CC << mm) {
-		if (ccMon.count(noval) == 0) {
-			ccMon[noval] = mm.getValue();
-			return;
-		}
-		else {
-			if (std::abs(ccMon[noval] - (int)mm.getValue()) <= 32) {
-				return;
-			}
-		}
 
-	}
-
+	// TODO: So far learning is done "the old way"
+	// Instead, it should save midiBinding object using the learnCb_.
+	// 
 	MidiEvent midiEvent(mm.getByte(0), mm.getByte(1), mm.getByte(2));
 	learnCb_(midiEvent);
 	stopLearn();

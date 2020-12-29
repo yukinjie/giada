@@ -32,9 +32,6 @@
 #include "core/midiPorts.h"
 #include "core/midiSignalCb.h"
 
-// TODO: multiple callback support
-// TODO: persistent callback support
-
 namespace giada {
 namespace m {
 namespace midiSignalCb

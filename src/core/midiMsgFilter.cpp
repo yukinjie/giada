@@ -264,7 +264,9 @@ bool MidiMsgFilter::check(const MidiMsg& mm) const {
 
 	// Process underlying filters that were joined in
 	// through custom logic operators
-
+	//
+	// TODO: Perhaps could be optimized in case of "0 && x" or "1 || x"
+	// (The result is already known)
 	for (auto& mbo : m_bin_ops) {
 		switch (mbo.bo) {
 			case MMF_AND:
@@ -359,6 +361,7 @@ void mbo_from_json(const nl::json& j, MidiMsgFilter::mmfBinOps& mbo) {
 
 MidiMsgFilter MidiMsgFilter::operator&(const MidiMsgFilter& mmf) const {
 	MidiMsgFilter output = *this;
+	// First it tries to merge two filters into one, if possible
 	if (output._tryMerge(mmf))
 		return output;
 	else {
@@ -451,14 +454,20 @@ bool MidiMsgFilter::_tryMerge(const MidiMsgFilter& mmf) {
 	if (m_bin_ops.size() || mmf.m_bin_ops.size())
 		return false;
 
-	// or have incompatible sizes 
+	// If filters have incompatible sizes 
 	// and the shorter one doesn't allow for longer messages
-	if ((m_mask.size() > mmf.m_mask.size()) && !(mmf.m_allow_longer_msg))
-		return false;
-	if ((m_mask.size() < mmf.m_mask.size()) && !(m_allow_longer_msg))
-		return false;
+	// The resulting filter will never pass any message.
+	if ((m_mask.size() > mmf.m_mask.size()) && !(mmf.m_allow_longer_msg)) {
+		*this = !MMF_ANY;
+		return true;
+	}
+	if ((m_mask.size() < mmf.m_mask.size()) && !(m_allow_longer_msg)) {
+		*this = !MMF_ANY;
+		return true;
+	}
 
-	// If a message is expected to come from two different senders..
+	// If a message is expected to come from two different senders
+	// Obviously the resulting filter will block everything as well.
 	if ((!m_sender.empty()) && (!mmf.m_sender.empty()) &&
 						(m_sender != mmf.m_sender)) {
 		*this = !MMF_ANY;
