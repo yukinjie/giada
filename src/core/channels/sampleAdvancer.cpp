@@ -26,8 +26,10 @@
 
 #include "sampleAdvancer.h"
 #include "core/channels/channel.h"
-#include "core/clock.h"
+#include "core/sequencer.h"
 #include <cassert>
+
+extern giada::m::Sequencer g_sequencer;
 
 namespace giada::m::sampleAdvancer
 {
@@ -202,7 +204,7 @@ void onLastFrame(const channel::Data& ch)
 	ChannelStatus    playStatus = ch.state->playStatus.load();
 	SamplePlayerMode mode       = ch.samplePlayer->mode;
 	bool             isLoop     = ch.samplePlayer->isAnyLoopMode();
-	bool             running    = clock::isRunning();
+	bool             running    = g_sequencer.isRunning();
 
 	if (playStatus == ChannelStatus::PLAY)
 	{
@@ -225,23 +227,23 @@ void onLastFrame(const channel::Data& ch)
 
 /* -------------------------------------------------------------------------- */
 
-void advance(const channel::Data& ch, const sequencer::Event& e)
+void advance(const channel::Data& ch, const Sequencer::Event& e)
 {
 	switch (e.type)
 	{
-	case sequencer::EventType::FIRST_BEAT:
+	case Sequencer::EventType::FIRST_BEAT:
 		onFirstBeat_(ch, e.delta);
 		break;
 
-	case sequencer::EventType::BAR:
+	case Sequencer::EventType::BAR:
 		onBar_(ch, e.delta);
 		break;
 
-	case sequencer::EventType::REWIND:
+	case Sequencer::EventType::REWIND:
 		rewind_(ch, e.delta);
 		break;
 
-	case sequencer::EventType::ACTIONS:
+	case Sequencer::EventType::ACTIONS:
 		if (ch.state->readActions.load() == true)
 			parseActions_(ch, *e.actions, e.delta);
 		break;

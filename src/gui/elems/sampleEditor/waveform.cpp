@@ -42,9 +42,9 @@
 #include <cassert>
 #include <cmath>
 
-namespace giada
-{
-namespace v
+extern giada::m::conf::Data g_conf;
+
+namespace giada::v
 {
 geWaveform::geWaveform(int x, int y, int w, int h)
 : Fl_Widget(x, y, w, h, nullptr)
@@ -62,8 +62,8 @@ geWaveform::geWaveform(int x, int y, int w, int h)
 {
 	m_waveform.size = w;
 
-	m_grid.snap  = m::conf::conf.sampleEditorGridOn;
-	m_grid.level = m::conf::conf.sampleEditorGridVal;
+	m_grid.snap  = g_conf.sampleEditorGridOn;
+	m_grid.level = g_conf.sampleEditorGridVal;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -679,5 +679,4 @@ void geWaveform::selectAll()
 	m_selection.b = m_data->waveSize - 1;
 	redraw();
 }
-} // namespace v
-} // namespace giada
+} // namespace giada::v

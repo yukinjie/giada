@@ -31,9 +31,9 @@
 #include "gui/elems/basics/check.h"
 #include <FL/Fl_Pack.H>
 
-namespace giada
-{
-namespace v
+extern giada::m::conf::Data g_conf;
+
+namespace giada::v
 {
 geTabBehaviors::geTabBehaviors(int X, int Y, int W, int H)
 : Fl_Group(X, Y, W, H)
@@ -56,20 +56,19 @@ geTabBehaviors::geTabBehaviors(int X, int Y, int W, int H)
 
 	add(m_container);
 
-	m_chansStopOnSeqHalt.value(m::conf::conf.chansStopOnSeqHalt);
-	m_treatRecsAsLoops.value(m::conf::conf.treatRecsAsLoops);
-	m_inputMonitorDefaultOn.value(m::conf::conf.inputMonitorDefaultOn);
-	m_overdubProtectionDefaultOn.value(m::conf::conf.overdubProtectionDefaultOn);
+	m_chansStopOnSeqHalt.value(g_conf.chansStopOnSeqHalt);
+	m_treatRecsAsLoops.value(g_conf.treatRecsAsLoops);
+	m_inputMonitorDefaultOn.value(g_conf.inputMonitorDefaultOn);
+	m_overdubProtectionDefaultOn.value(g_conf.overdubProtectionDefaultOn);
 }
 
 /* -------------------------------------------------------------------------- */
 
 void geTabBehaviors::save()
 {
-	m::conf::conf.chansStopOnSeqHalt         = m_chansStopOnSeqHalt.value();
-	m::conf::conf.treatRecsAsLoops           = m_treatRecsAsLoops.value();
-	m::conf::conf.inputMonitorDefaultOn      = m_inputMonitorDefaultOn.value();
-	m::conf::conf.overdubProtectionDefaultOn = m_overdubProtectionDefaultOn.value();
+	g_conf.chansStopOnSeqHalt         = m_chansStopOnSeqHalt.value();
+	g_conf.treatRecsAsLoops           = m_treatRecsAsLoops.value();
+	g_conf.inputMonitorDefaultOn      = m_inputMonitorDefaultOn.value();
+	g_conf.overdubProtectionDefaultOn = m_overdubProtectionDefaultOn.value();
 }
-} // namespace v
-} // namespace giada
+} // namespace giada::v

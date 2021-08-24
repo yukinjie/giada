@@ -32,7 +32,7 @@
 #elif defined(__linux__) || defined(__FreeBSD__)
 #include <X11/xpm.h>
 #endif
-#include "core/clock.h"
+#include "core/sequencer.h"
 #include "core/conf.h"
 #include "core/graphics.h"
 #include "core/mixer.h"
@@ -55,6 +55,8 @@
 #include "string.h"
 
 extern giada::v::gdMainWindow* G_MainWin;
+extern giada::m::Sequencer     g_sequencer;
+extern giada::m::MixerHandler  g_mixerHandler;
 
 namespace giada::u::gui
 {
@@ -123,10 +125,8 @@ bool shouldBlink()
 
 void updateStaticWidgets()
 {
-	using namespace giada::m;
-
-	G_MainWin->mainIO->setOutVol(mh::getOutVol());
-	G_MainWin->mainIO->setInVol(mh::getInVol());
+	G_MainWin->mainIO->setOutVol(g_mixerHandler.getOutVol());
+	G_MainWin->mainIO->setInVol(g_mixerHandler.getInVol());
 
 #ifdef WITH_VST
 
@@ -135,9 +135,9 @@ void updateStaticWidgets()
 
 #endif
 
-	G_MainWin->mainTimer->setMeter(clock::getBeats(), clock::getBars());
-	G_MainWin->mainTimer->setBpm(clock::getBpm());
-	G_MainWin->mainTimer->setQuantizer(clock::getQuantizerValue());
+	G_MainWin->mainTimer->setMeter(g_sequencer.getBeats(), g_sequencer.getBars());
+	G_MainWin->mainTimer->setBpm(g_sequencer.getBpm());
+	G_MainWin->mainTimer->setQuantizer(g_sequencer.getQuantizerValue());
 }
 
 /* -------------------------------------------------------------------------- */

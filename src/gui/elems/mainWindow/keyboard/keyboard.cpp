@@ -41,6 +41,8 @@
 #include <FL/fl_draw.H>
 #include <cassert>
 
+extern giada::v::Dispatcher g_viewDispatcher;
+
 namespace giada::v
 {
 geKeyboard::geKeyboard(int X, int Y, int W, int H)
@@ -138,7 +140,7 @@ int geKeyboard::handle(int e)
 	case FL_KEYDOWN:  // Keyboard key pushed
 	case FL_KEYUP:
 	{ // Keyboard key released
-		dispatcher::dispatchKey(e);
+		g_viewDispatcher.dispatchKey(e);
 		return 1;
 	}
 	case FL_DND_ENTER: // return(1) for these events to 'accept' dnd

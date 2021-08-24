@@ -30,12 +30,10 @@
 #include "column.h"
 #include "core/channels/channel.h"
 #include "core/channels/samplePlayer.h"
-#include "core/clock.h"
 #include "core/conf.h"
 #include "core/graphics.h"
 #include "core/mixer.h"
 #include "core/model/model.h"
-#include "core/recManager.h"
 #include "core/recorder.h"
 #include "core/wave.h"
 #include "glue/channel.h"
@@ -60,14 +58,16 @@
 #include "gui/elems/basics/statusButton.h"
 #include "keyboard.h"
 #include "sampleChannelButton.h"
+#include "src/core/actions/actions.h"
 #include "utils/gui.h"
 #include <cassert>
 
 extern giada::v::gdMainWindow* G_MainWin;
+extern giada::m::Recorder      g_recorder;
+extern giada::m::conf::Data    g_conf;
+extern giada::v::Dispatcher    g_viewDispatcher;
 
-namespace giada
-{
-namespace v
+namespace giada::v
 {
 namespace
 {
@@ -115,14 +115,14 @@ void menuCallback(Fl_Widget* w, void* v)
 	case Menu::LOAD_SAMPLE:
 	{
 		gdWindow* w = new gdBrowserLoad("Browse sample",
-		    m::conf::conf.samplePath.c_str(), c::storage::loadSample, data.id);
+		    g_conf.samplePath.c_str(), c::storage::loadSample, data.id);
 		u::gui::openSubWindow(G_MainWin, w, WID_FILE_BROWSER);
 		break;
 	}
 	case Menu::EXPORT_SAMPLE:
 	{
 		gdWindow* w = new gdBrowserSave("Save sample",
-		    m::conf::conf.samplePath.c_str(), "", c::storage::saveSample, data.id);
+		    g_conf.samplePath.c_str(), "", c::storage::saveSample, data.id);
 		u::gui::openSubWindow(G_MainWin, w, WID_FILE_BROWSER);
 		break;
 	}
@@ -152,7 +152,7 @@ void menuCallback(Fl_Widget* w, void* v)
 	}
 	case Menu::EDIT_ACTIONS:
 	{
-		u::gui::openSubWindow(G_MainWin, new gdSampleActionEditor(data.id, m::conf::conf),
+		u::gui::openSubWindow(G_MainWin, new gdSampleActionEditor(data.id, g_conf),
 		    WID_ACTION_EDITOR);
 		break;
 	}
@@ -285,7 +285,7 @@ void geSampleChannel::cb_readActions(Fl_Widget* /*w*/, void* p) { ((geSampleChan
 
 void geSampleChannel::cb_playButton()
 {
-	v::dispatcher::dispatchTouch(*this, playButton->value());
+	g_viewDispatcher.dispatchTouch(*this, playButton->value());
 }
 
 /* -------------------------------------------------------------------------- */
@@ -295,7 +295,7 @@ void geSampleChannel::cb_openMenu()
 	/* If you're recording (input or actions) no menu is allowed; you can't do
 	anything, especially deallocate the channel. */
 
-	if (m::recManager::isRecording())
+	if (g_recorder.isRecording())
 		return;
 
 	Fl_Menu_Item rclick_menu[] = {
@@ -423,5 +423,4 @@ void geSampleChannel::resize(int X, int Y, int W, int H)
 
 	packWidgets();
 }
-} // namespace v
-} // namespace giada
+} // namespace giada::v

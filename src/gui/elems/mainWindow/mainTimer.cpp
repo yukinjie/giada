@@ -25,7 +25,6 @@
  * -------------------------------------------------------------------------- */
 
 #include "mainTimer.h"
-#include "core/clock.h"
 #include "core/const.h"
 #include "core/graphics.h"
 #include "glue/events.h"

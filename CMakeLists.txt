@@ -36,7 +36,7 @@ list(APPEND SOURCES
 	src/core/worker.cpp
 	src/core/eventDispatcher.cpp
 	src/core/midiDispatcher.cpp
-	src/core/midiMapConf.cpp
+    src/core/midiMap.cpp
 	src/core/midiEvent.cpp
 	src/core/quantizer.cpp
 	src/core/conf.cpp
@@ -51,13 +51,12 @@ list(APPEND SOURCES
 	src/core/kernelMidi.cpp
 	src/core/graphics.cpp
 	src/core/patch.cpp
-	src/core/recorderHandler.cpp
-	src/core/recorder.cpp
+	src/core/actions/actionRecorder.cpp
+	src/core/actions/actions.cpp
 	src/core/mixer.cpp
-	src/core/clock.cpp
-	src/core/sync.cpp
+        src/core/synchronizer.cpp
 	src/core/waveManager.cpp
-	src/core/recManager.cpp
+    src/core/recorder.cpp
 	src/core/midiLearnParam.cpp
 	src/core/resampler.cpp
 	src/core/plugins/pluginHost.cpp

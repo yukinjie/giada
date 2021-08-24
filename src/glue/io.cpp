@@ -26,16 +26,13 @@
 
 #include "io.h"
 #include "channel.h"
-#include "core/clock.h"
 #include "core/conf.h"
 #include "core/kernelAudio.h"
 #include "core/midiDispatcher.h"
 #include "core/mixer.h"
 #include "core/mixerHandler.h"
 #include "core/model/model.h"
-#include "core/recManager.h"
 #include "core/recorder.h"
-#include "core/recorderHandler.h"
 #include "core/wave.h"
 #include "gui/dialogs/mainWindow.h"
 #include "gui/dialogs/midiIO/midiInputBase.h"
@@ -48,12 +45,16 @@
 #include "gui/elems/mainWindow/mainTimer.h"
 #include "gui/elems/mainWindow/mainTransport.h"
 #include "main.h"
+#include "src/core/actions/actionRecorder.h"
+#include "src/core/actions/actions.h"
 #include "utils/gui.h"
 #include "utils/log.h"
 #include "utils/math.h"
 #include <FL/Fl.H>
 
-extern giada::v::gdMainWindow* G_MainWin;
+extern giada::v::gdMainWindow*  G_MainWin;
+extern giada::m::model::Model   g_model;
+extern giada::m::MidiDispatcher g_midiDispatcher;
 
 namespace giada::c::io
 {
@@ -143,29 +144,29 @@ Master_InputData::Master_InputData(const m::model::MidiIn& midiIn)
 
 Channel_InputData channel_getInputData(ID channelId)
 {
-	return Channel_InputData(m::model::get().getChannel(channelId));
+	return Channel_InputData(g_model.get().getChannel(channelId));
 }
 
 /* -------------------------------------------------------------------------- */
 
 Channel_OutputData channel_getOutputData(ID channelId)
 {
-	return Channel_OutputData(m::model::get().getChannel(channelId));
+	return Channel_OutputData(g_model.get().getChannel(channelId));
 }
 
 /* -------------------------------------------------------------------------- */
 
 Master_InputData master_getInputData()
 {
-	return Master_InputData(m::model::get().midiIn);
+	return Master_InputData(g_model.get().midiIn);
 }
 
 /* -------------------------------------------------------------------------- */
 
 void channel_enableMidiLearn(ID channelId, bool v)
 {
-	m::model::get().getChannel(channelId).midiLearner.enabled = v;
-	m::model::swap(m::model::SwapType::NONE);
+	g_model.get().getChannel(channelId).midiLearner.enabled = v;
+	g_model.swap(m::model::SwapType::NONE);
 	rebuildMidiWindows_();
 }
 
@@ -173,8 +174,8 @@ void channel_enableMidiLearn(ID channelId, bool v)
 
 void channel_enableMidiLightning(ID channelId, bool v)
 {
-	m::model::get().getChannel(channelId).midiLighter.enabled = v;
-	m::model::swap(m::model::SwapType::NONE);
+	g_model.get().getChannel(channelId).midiLighter.enabled = v;
+	g_model.swap(m::model::SwapType::NONE);
 	rebuildMidiWindows_();
 }
 
@@ -182,8 +183,8 @@ void channel_enableMidiLightning(ID channelId, bool v)
 
 void channel_enableMidiOutput(ID channelId, bool v)
 {
-	m::model::get().getChannel(channelId).midiSender->enabled = v;
-	m::model::swap(m::model::SwapType::NONE);
+	g_model.get().getChannel(channelId).midiSender->enabled = v;
+	g_model.swap(m::model::SwapType::NONE);
 	rebuildMidiWindows_();
 }
 
@@ -191,49 +192,49 @@ void channel_enableMidiOutput(ID channelId, bool v)
 
 void channel_enableVelocityAsVol(ID channelId, bool v)
 {
-	m::model::get().getChannel(channelId).samplePlayer->velocityAsVol = v;
-	m::model::swap(m::model::SwapType::NONE);
+	g_model.get().getChannel(channelId).samplePlayer->velocityAsVol = v;
+	g_model.swap(m::model::SwapType::NONE);
 }
 
 /* -------------------------------------------------------------------------- */
 
 void channel_setMidiInputFilter(ID channelId, int ch)
 {
-	m::model::get().getChannel(channelId).midiLearner.filter = ch;
-	m::model::swap(m::model::SwapType::NONE);
+	g_model.get().getChannel(channelId).midiLearner.filter = ch;
+	g_model.swap(m::model::SwapType::NONE);
 }
 
 void channel_setMidiOutputFilter(ID channelId, int ch)
 {
-	m::model::get().getChannel(channelId).midiSender->filter = ch;
-	m::model::swap(m::model::SwapType::NONE);
+	g_model.get().getChannel(channelId).midiSender->filter = ch;
+	g_model.swap(m::model::SwapType::NONE);
 }
 
 /* -------------------------------------------------------------------------- */
 
 void channel_setKey(ID channelId, int k)
 {
-	m::model::get().getChannel(channelId).key = k;
-	m::model::swap(m::model::SwapType::HARD);
+	g_model.get().getChannel(channelId).key = k;
+	g_model.swap(m::model::SwapType::HARD);
 }
 
 /* -------------------------------------------------------------------------- */
 
 void channel_startMidiLearn(int param, ID channelId)
 {
-	m::midiDispatcher::startChannelLearn(param, channelId, rebuildMidiWindows_);
+	g_midiDispatcher.startChannelLearn(param, channelId, rebuildMidiWindows_);
 }
 
 void master_startMidiLearn(int param)
 {
-	m::midiDispatcher::startMasterLearn(param, rebuildMidiWindows_);
+	g_midiDispatcher.startMasterLearn(param, rebuildMidiWindows_);
 }
 
 #ifdef WITH_VST
 
 void plugin_startMidiLearn(int paramIndex, ID pluginId)
 {
-	m::midiDispatcher::startPluginLearn(paramIndex, pluginId, rebuildMidiWindows_);
+	g_midiDispatcher.startPluginLearn(paramIndex, pluginId, rebuildMidiWindows_);
 }
 
 #endif
@@ -242,7 +243,7 @@ void plugin_startMidiLearn(int paramIndex, ID pluginId)
 
 void stopMidiLearn()
 {
-	m::midiDispatcher::stopLearn();
+	g_midiDispatcher.stopLearn();
 	rebuildMidiWindows_();
 }
 
@@ -250,19 +251,19 @@ void stopMidiLearn()
 
 void channel_clearMidiLearn(int param, ID channelId)
 {
-	m::midiDispatcher::clearChannelLearn(param, channelId, rebuildMidiWindows_);
+	g_midiDispatcher.clearChannelLearn(param, channelId, rebuildMidiWindows_);
 }
 
 void master_clearMidiLearn(int param)
 {
-	m::midiDispatcher::clearMasterLearn(param, rebuildMidiWindows_);
+	g_midiDispatcher.clearMasterLearn(param, rebuildMidiWindows_);
 }
 
 #ifdef WITH_VST
 
 void plugin_clearMidiLearn(int param, ID pluginId)
 {
-	m::midiDispatcher::clearPluginLearn(param, pluginId, rebuildMidiWindows_);
+	g_midiDispatcher.clearPluginLearn(param, pluginId, rebuildMidiWindows_);
 }
 
 #endif
@@ -271,8 +272,8 @@ void plugin_clearMidiLearn(int param, ID pluginId)
 
 void master_enableMidiLearn(bool v)
 {
-	m::model::get().midiIn.enabled = v;
-	m::model::swap(m::model::SwapType::NONE);
+	g_model.get().midiIn.enabled = v;
+	g_model.swap(m::model::SwapType::NONE);
 	rebuildMidiWindows_();
 }
 
@@ -280,7 +281,7 @@ void master_enableMidiLearn(bool v)
 
 void master_setMidiFilter(int c)
 {
-	m::model::get().midiIn.filter = c;
-	m::model::swap(m::model::SwapType::NONE);
+	g_model.get().midiIn.filter = c;
+	g_model.swap(m::model::SwapType::NONE);
 }
 } // namespace giada::c::io

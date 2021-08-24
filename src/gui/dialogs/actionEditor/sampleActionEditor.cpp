@@ -36,7 +36,7 @@
 
 namespace giada::v
 {
-gdSampleActionEditor::gdSampleActionEditor(ID channelId, m::conf::Conf& conf)
+gdSampleActionEditor::gdSampleActionEditor(ID channelId, m::conf::Data& conf)
 : gdBaseActionEditor(channelId, conf)
 , m_barPadding(0, 0, w() - 232, G_GUI_UNIT)
 , m_sampleActionEditor(0, 0, this)

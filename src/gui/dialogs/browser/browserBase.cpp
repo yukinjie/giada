@@ -36,14 +36,14 @@
 #include "utils/fs.h"
 #include "utils/gui.h"
 
-namespace giada
-{
-namespace v
+extern giada::m::conf::Data g_conf;
+
+namespace giada::v
 {
 gdBrowserBase::gdBrowserBase(const std::string& title, const std::string& path,
     std::function<void(void*)> callback, ID channelId)
-: gdWindow(m::conf::conf.browserX, m::conf::conf.browserY, m::conf::conf.browserW,
-      m::conf::conf.browserH, title.c_str())
+: gdWindow(g_conf.browserX, g_conf.browserY, g_conf.browserW,
+      g_conf.browserH, title.c_str())
 , m_callback(callback)
 , m_channelId(channelId)
 {
@@ -66,8 +66,8 @@ gdBrowserBase::gdBrowserBase(const std::string& title, const std::string& path,
 
 	browser = new geBrowser(8, groupTop->y() + groupTop->h() + 8, w() - 16, h() - 101);
 	browser->loadDir(path);
-	if (path == m::conf::conf.browserLastPath)
-		browser->preselect(m::conf::conf.browserPosition, m::conf::conf.browserLastValue);
+	if (path == g_conf.browserLastPath)
+		browser->preselect(g_conf.browserPosition, g_conf.browserLastValue);
 
 	Fl_Group* groupButtons = new Fl_Group(8, browser->y() + browser->h() + 8, w() - 16, 20);
 	ok                     = new geButton(w() - 88, groupButtons->y(), 80, 20);
@@ -94,13 +94,13 @@ gdBrowserBase::gdBrowserBase(const std::string& title, const std::string& path,
 
 gdBrowserBase::~gdBrowserBase()
 {
-	m::conf::conf.browserX         = x();
-	m::conf::conf.browserY         = y();
-	m::conf::conf.browserW         = w();
-	m::conf::conf.browserH         = h();
-	m::conf::conf.browserPosition  = browser->position();
-	m::conf::conf.browserLastPath  = browser->getCurrentDir();
-	m::conf::conf.browserLastValue = browser->value();
+	g_conf.browserX         = x();
+	g_conf.browserY         = y();
+	g_conf.browserW         = w();
+	g_conf.browserH         = h();
+	g_conf.browserPosition  = browser->position();
+	g_conf.browserLastPath  = browser->getCurrentDir();
+	g_conf.browserLastValue = browser->value();
 }
 
 /* -------------------------------------------------------------------------- */
@@ -176,6 +176,4 @@ void gdBrowserBase::fireCallback() const
 {
 	m_callback((void*)this);
 }
-
-} // namespace v
-} // namespace giada
+} // namespace giada::v

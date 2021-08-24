@@ -33,26 +33,25 @@
 #if (defined(__linux__) || defined(__FreeBSD__)) && defined(WITH_VST)
 #include <X11/Xlib.h> // For XInitThreads
 #endif
+#include "core/actions/actionRecorder.h"
+#include "core/actions/actions.h"
 #include "core/channels/channelManager.h"
-#include "core/clock.h"
 #include "core/conf.h"
 #include "core/const.h"
 #include "core/eventDispatcher.h"
+#include "core/init.h"
 #include "core/kernelAudio.h"
 #include "core/kernelMidi.h"
-#include "core/midiMapConf.h"
-#include "core/mixer.h"
+#include "core/midiMap.h"
 #include "core/mixerHandler.h"
 #include "core/model/model.h"
 #include "core/model/storage.h"
 #include "core/patch.h"
 #include "core/plugins/pluginHost.h"
 #include "core/plugins/pluginManager.h"
-#include "core/recManager.h"
 #include "core/recorder.h"
-#include "core/recorderHandler.h"
 #include "core/sequencer.h"
-#include "core/sync.h"
+#include "core/synchronizer.h"
 #include "core/wave.h"
 #include "core/waveManager.h"
 #include "deps/json/single_include/nlohmann/json.hpp"
@@ -60,7 +59,6 @@
 #include "gui/dialogs/mainWindow.h"
 #include "gui/dialogs/warnings.h"
 #include "gui/updater.h"
-#include "init.h"
 #include "utils/fs.h"
 #include "utils/gui.h"
 #include "utils/log.h"
@@ -68,7 +66,21 @@
 #include "utils/ver.h"
 #include <FL/Fl.H>
 
-extern giada::v::gdMainWindow* G_MainWin;
+extern giada::v::gdMainWindow*  G_MainWin;
+extern giada::m::model::Model   g_model;
+extern giada::m::KernelAudio    g_kernelAudio;
+extern giada::m::Sequencer      g_sequencer;
+extern giada::m::ActionRecorder g_actionRecorder;
+extern giada::m::MixerHandler   g_mixerHandler;
+extern giada::m::Synchronizer   g_synchronizer;
+extern giada::m::PluginHost     g_pluginHost;
+extern giada::m::PluginManager  g_pluginManager;
+extern giada::m::ChannelManager g_channelManager;
+extern giada::m::WaveManager    g_waveManager;
+extern giada::m::KernelMidi     g_kernelMidi;
+extern giada::m::conf::Data     g_conf;
+extern giada::m::patch::Data    g_patch;
+extern giada::m::midiMap::Data  g_midiMap;
 
 namespace giada::m::init
 {
@@ -76,63 +88,38 @@ namespace
 {
 void initConf_()
 {
-	if (!conf::read())
+	if (!conf::read(g_conf))
 		u::log::print("[init] Can't read configuration file! Using default values\n");
 
-	patch::init();
-	midimap::init();
-	midimap::setDefault();
+	model::load(g_conf);
 
-	model::load(conf::conf);
-
-	if (!u::log::init(conf::conf.logMode))
+	if (!u::log::init(g_conf.logMode))
 		u::log::print("[init] log init failed! Using default stdout\n");
 
-	if (midimap::read(conf::conf.midiMapPath) != MIDIMAP_READ_OK)
+	midiMap::init(g_midiMap);
+	if (midiMap::read(g_midiMap, g_conf.midiMapPath) != MIDIMAP_READ_OK)
 		u::log::print("[init] MIDI map read failed!\n");
-}
-
-/* -------------------------------------------------------------------------- */
-
-void initSystem_()
-{
-	model::init();
-	eventDispatcher::init();
 }
 
 /* -------------------------------------------------------------------------- */
 
 void initAudio_()
 {
-	kernelAudio::openDevice(conf::conf);
-	clock::init();
-	sync::init(conf::conf.samplerate, conf::conf.midiTCfps);
-	mh::init();
-	sequencer::init();
-	recorder::init();
-	recorderHandler::init();
-
-#ifdef WITH_VST
-
-	pluginManager::init(conf::conf.samplerate, kernelAudio::getRealBufSize());
-	pluginHost::init(kernelAudio::getRealBufSize());
-
-#endif
-
-	if (!kernelAudio::isReady())
+	g_kernelAudio.openDevice(g_conf);
+	if (!g_kernelAudio.isReady())
 		return;
-
-	mixer::enable();
-	kernelAudio::startStream();
+	g_mixerHandler.startRendering();
+	g_kernelAudio.startStream();
 }
 
 /* -------------------------------------------------------------------------- */
 
 void initMIDI_()
 {
-	kernelMidi::setApi(conf::conf.midiSystem);
-	kernelMidi::openOutDevice(conf::conf.midiPortOut);
-	kernelMidi::openInDevice(conf::conf.midiPortIn);
+	g_kernelMidi.setApi(g_conf.midiSystem);
+	g_kernelMidi.openOutDevice(g_conf.midiPortOut);
+	g_kernelMidi.openInDevice(g_conf.midiPortIn);
+	midiMap::sendInitMessages(g_kernelMidi, g_midiMap);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -148,12 +135,12 @@ void initGUI_(int argc, char** argv)
 #endif
 
 	G_MainWin = new v::gdMainWindow(G_MIN_GUI_WIDTH, G_MIN_GUI_HEIGHT, "", argc, argv);
-	G_MainWin->resize(conf::conf.mainWindowX, conf::conf.mainWindowY, conf::conf.mainWindowW,
-	    conf::conf.mainWindowH);
+	G_MainWin->resize(g_conf.mainWindowX, g_conf.mainWindowY, g_conf.mainWindowW,
+	    g_conf.mainWindowH);
 
-	u::gui::updateMainWinLabel(patch::patch.name == "" ? G_DEFAULT_PATCH_NAME : patch::patch.name);
+	u::gui::updateMainWinLabel(g_patch.name == "" ? G_DEFAULT_PATCH_NAME : g_patch.name);
 
-	if (!kernelAudio::isReady())
+	if (!g_kernelAudio.isReady())
 		v::gdAlert("Your soundcard isn't configured correctly.\n"
 		           "Check the configuration and restart Giada.");
 
@@ -165,23 +152,13 @@ void initGUI_(int argc, char** argv)
 
 void shutdownAudio_()
 {
-	if (kernelAudio::isReady())
+	if (g_kernelAudio.isReady())
 	{
-		kernelAudio::closeDevice();
+		g_kernelAudio.closeDevice();
 		u::log::print("[init] KernelAudio closed\n");
-		mh::close();
+		g_mixerHandler.stopRendering();
 		u::log::print("[init] Mixer closed\n");
 	}
-
-	/* TODO - why cleaning plug-ins and mixer memory? Just shutdown the audio
-	device and let the OS take care of the rest. */
-
-#ifdef WITH_VST
-
-	pluginHost::close();
-	u::log::print("[init] PluginHost cleaned up\n");
-
-#endif
 }
 
 /* -------------------------------------------------------------------------- */
@@ -215,7 +192,7 @@ void printBuildInfo_()
 #ifdef WITH_VST
 	u::log::print("[init]   JUCE - %d.%d.%d\n", JUCE_MAJOR_VERSION, JUCE_MINOR_VERSION, JUCE_BUILDNUMBER);
 #endif
-	kernelAudio::logCompiledAPIs();
+	g_kernelAudio.logCompiledAPIs();
 }
 } // namespace
 
@@ -228,7 +205,6 @@ void startup(int argc, char** argv)
 	printBuildInfo_();
 
 	initConf_();
-	initSystem_();
 	initAudio_();
 	initMIDI_();
 	initGUI_(argc, argv);
@@ -253,22 +229,21 @@ void reset()
 	u::gui::closeAllSubwindows();
 	G_MainWin->clearKeyboard();
 
-	mh::close();
-#ifdef WITH_VST
-	pluginHost::close();
-#endif
+	g_mixerHandler.stopRendering();
 
-	model::init();
-	channelManager::init();
-	waveManager::init();
-	clock::init();
-	sync::init(conf::conf.samplerate, conf::conf.midiTCfps);
-	mh::init();
-	sequencer::init();
-	recorder::init();
+	g_model.reset();
+	g_channelManager.reset();
+	g_waveManager.reset();
+	g_synchronizer.reset();
+	g_sequencer.reset(g_conf.samplerate);
+	g_mixerHandler.reset(g_sequencer.getMaxFramesInLoop(g_conf.samplerate),
+	    g_kernelAudio.getRealBufSize(), g_channelManager);
+	g_actionRecorder.reset();
 #ifdef WITH_VST
-	pluginManager::init(conf::conf.samplerate, kernelAudio::getRealBufSize());
+	g_pluginHost.reset(g_kernelAudio.getRealBufSize());
+	g_pluginManager.reset(static_cast<PluginManager::SortMethod>(g_conf.pluginSortMethod));
 #endif
+	g_mixerHandler.startRendering();
 
 	u::gui::updateMainWinLabel(G_DEFAULT_PATCH_NAME);
 	u::gui::updateStaticWidgets();
@@ -280,9 +255,9 @@ void shutdown()
 {
 	shutdownGUI_();
 
-	model::store(conf::conf);
+	model::store(g_conf);
 
-	if (!conf::write())
+	if (!conf::write(g_conf))
 		u::log::print("[init] error while saving configuration file!\n");
 	else
 		u::log::print("[init] configuration saved\n");

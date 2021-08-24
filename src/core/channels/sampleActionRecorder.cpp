@@ -25,15 +25,19 @@
  * -------------------------------------------------------------------------- */
 
 #include "sampleActionRecorder.h"
-#include "core/action.h"
 #include "core/channels/channel.h"
-#include "core/clock.h"
 #include "core/conf.h"
 #include "core/eventDispatcher.h"
 #include "core/mixer.h"
-#include "core/recManager.h"
-#include "core/recorderHandler.h"
+#include "core/recorder.h"
+#include "src/core/actions/action.h"
+#include "src/core/actions/actionRecorder.h"
 #include <cassert>
+
+extern giada::m::Sequencer      g_sequencer;
+extern giada::m::ActionRecorder g_actionRecorder;
+extern giada::m::Recorder       g_recorder;
+extern giada::m::conf::Data     g_conf;
 
 namespace giada::m::sampleActionRecorder
 {
@@ -51,9 +55,9 @@ bool canRecord_(const channel::Data& ch);
 
 bool canRecord_(const channel::Data& ch)
 {
-	return recManager::isRecordingAction() &&
-	       clock::isRunning() &&
-	       !recManager::isRecordingInput() &&
+	return g_recorder.isRecordingAction() &&
+	       g_sequencer.isRunning() &&
+	       !g_recorder.isRecordingInput() &&
 	       !ch.samplePlayer->isAnyLoopMode();
 }
 
@@ -76,8 +80,8 @@ void onKeyPress_(channel::Data& ch)
 
 void record_(channel::Data& ch, int note)
 {
-	recorderHandler::liveRec(ch.id, MidiEvent(note, 0, 0),
-	    clock::quantize(clock::getCurrentFrame()));
+	g_actionRecorder.liveRec(ch.id, MidiEvent(note, 0, 0),
+	    g_sequencer.quantize(g_sequencer.getCurrentFrame()));
 
 	ch.hasActions = true;
 }
@@ -110,7 +114,7 @@ void toggleReadActions_(channel::Data& ch)
 
 void startReadActions_(channel::Data& ch)
 {
-	if (conf::conf.treatRecsAsLoops)
+	if (g_conf.treatRecsAsLoops)
 		ch.state->recStatus.store(ChannelStatus::WAIT);
 	else
 	{
@@ -127,7 +131,7 @@ void stopReadActions_(channel::Data& ch, ChannelStatus curRecStatus)
 	just stop and disable everything. Otherwise make sure a channel with actions
 	behave like a dynamic one. */
 
-	if (!clock::isRunning() || !conf::conf.treatRecsAsLoops)
+	if (!g_sequencer.isRunning() || !g_conf.treatRecsAsLoops)
 	{
 		ch.state->recStatus.store(ChannelStatus::OFF);
 		ch.state->readActions.store(false);
@@ -147,7 +151,7 @@ void killReadActions_(channel::Data& ch)
 	/* Killing Read Actions, i.e. shift + click on 'R' button is meaningful only 
 	when the conf::treatRecsAsLoops is true. */
 
-	if (!conf::conf.treatRecsAsLoops)
+	if (!g_conf.treatRecsAsLoops)
 		return;
 	ch.state->recStatus.store(ChannelStatus::OFF);
 	ch.state->readActions.store(false);
@@ -158,7 +162,7 @@ void killReadActions_(channel::Data& ch)
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-void react(channel::Data& ch, const eventDispatcher::Event& e)
+void react(channel::Data& ch, const EventDispatcher::Event& e)
 {
 	if (!ch.hasWave())
 		return;
@@ -166,28 +170,28 @@ void react(channel::Data& ch, const eventDispatcher::Event& e)
 	switch (e.type)
 	{
 
-	case eventDispatcher::EventType::KEY_PRESS:
+	case EventDispatcher::EventType::KEY_PRESS:
 		onKeyPress_(ch);
 		break;
 
 		/* Record a stop event only if channel is SINGLE_PRESS. For any other 
 		mode the key release event is meaningless. */
 
-	case eventDispatcher::EventType::KEY_RELEASE:
+	case EventDispatcher::EventType::KEY_RELEASE:
 		if (canRecord_(ch) && ch.samplePlayer->mode == SamplePlayerMode::SINGLE_PRESS)
 			record_(ch, MidiEvent::NOTE_OFF);
 		break;
 
-	case eventDispatcher::EventType::KEY_KILL:
+	case EventDispatcher::EventType::KEY_KILL:
 		if (canRecord_(ch))
 			record_(ch, MidiEvent::NOTE_KILL);
 		break;
 
-	case eventDispatcher::EventType::CHANNEL_TOGGLE_READ_ACTIONS:
+	case EventDispatcher::EventType::CHANNEL_TOGGLE_READ_ACTIONS:
 		toggleReadActions_(ch);
 		break;
 
-	case eventDispatcher::EventType::CHANNEL_KILL_READ_ACTIONS:
+	case EventDispatcher::EventType::CHANNEL_KILL_READ_ACTIONS:
 		killReadActions_(ch);
 		break;
 

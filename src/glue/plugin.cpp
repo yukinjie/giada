@@ -29,6 +29,7 @@
 #include "core/plugins/plugin.h"
 #include "core/conf.h"
 #include "core/const.h"
+#include "core/kernelAudio.h"
 #include "core/mixer.h"
 #include "core/model/model.h"
 #include "core/plugins/pluginHost.h"
@@ -45,6 +46,11 @@
 #include <cassert>
 
 extern giada::v::gdMainWindow* G_MainWin;
+extern giada::m::model::Model  g_model;
+extern giada::m::PluginHost    g_pluginHost;
+extern giada::m::conf::Data    g_conf;
+extern giada::m::PluginManager g_pluginManager;
+extern giada::m::KernelAudio   g_kernelAudio;
 
 namespace giada::c::plugin
 {
@@ -114,7 +120,7 @@ Plugins::Plugins(const m::channel::Data& c)
 
 Plugins getPlugins(ID channelId)
 {
-	return Plugins(m::model::get().getChannel(channelId));
+	return Plugins(g_model.get().getChannel(channelId));
 }
 
 Plugin getPlugin(m::Plugin& plugin, ID channelId)
@@ -131,7 +137,7 @@ Param getParam(int index, const m::Plugin& plugin, ID channelId)
 
 void updateWindow(ID pluginId, bool gui)
 {
-	m::Plugin* p = m::model::find<m::Plugin>(pluginId);
+	m::Plugin* p = g_model.find<m::Plugin>(pluginId);
 
 	assert(p != nullptr);
 
@@ -159,32 +165,43 @@ void updateWindow(ID pluginId, bool gui)
 
 void addPlugin(int pluginListIndex, ID channelId)
 {
-	if (pluginListIndex >= m::pluginManager::countAvailablePlugins())
+	if (pluginListIndex >= g_pluginManager.countAvailablePlugins())
 		return;
-	std::unique_ptr<m::Plugin> p = m::pluginManager::makePlugin(pluginListIndex);
-	if (p != nullptr)
-		m::pluginHost::addPlugin(std::move(p), channelId);
+	std::unique_ptr<m::Plugin> plugin    = g_pluginManager.makePlugin(pluginListIndex, g_conf.samplerate, g_kernelAudio.getRealBufSize());
+	const m::Plugin*           pluginPtr = plugin.get();
+	if (plugin != nullptr)
+		g_pluginHost.addPlugin(std::move(plugin));
+
+	/* TODO - unfortunately JUCE wants mutable plugin objects due to the
+	presence of the non-const processBlock() method. Why not const_casting
+	only in the Plugin class? */
+	g_model.get().getChannel(channelId).plugins.push_back(const_cast<m::Plugin*>(pluginPtr));
+	g_model.swap(m::model::SwapType::HARD);
 }
 
 /* -------------------------------------------------------------------------- */
 
 void swapPlugins(const m::Plugin& p1, const m::Plugin& p2, ID channelId)
 {
-	m::pluginHost::swapPlugin(p1, p2, channelId);
+	g_pluginHost.swapPlugin(p1, p2, g_model.get().getChannel(channelId).plugins);
+	g_model.swap(m::model::SwapType::HARD);
 }
 
 /* -------------------------------------------------------------------------- */
 
 void freePlugin(const m::Plugin& plugin, ID channelId)
 {
-	m::pluginHost::freePlugin(plugin, channelId);
+	u::vector::remove(g_model.get().getChannel(channelId).plugins, &plugin);
+	g_model.swap(m::model::SwapType::HARD);
+
+	g_pluginHost.freePlugin(plugin);
 }
 
 /* -------------------------------------------------------------------------- */
 
 void setProgram(ID pluginId, int programIndex)
 {
-	m::pluginHost::setPluginProgram(pluginId, programIndex);
+	g_pluginHost.setPluginProgram(pluginId, programIndex);
 	updateWindow(pluginId, /*gui=*/true);
 }
 
@@ -192,7 +209,7 @@ void setProgram(ID pluginId, int programIndex)
 
 void toggleBypass(ID pluginId)
 {
-	m::pluginHost::toggleBypass(pluginId);
+	g_pluginHost.toggleBypass(pluginId);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -207,9 +224,9 @@ void setPluginPathCb(void* data)
 		return;
 	}
 
-	if (!m::conf::conf.pluginPath.empty() && m::conf::conf.pluginPath.back() != ';')
-		m::conf::conf.pluginPath += ";";
-	m::conf::conf.pluginPath += browser->getCurrentPath();
+	if (!g_conf.pluginPath.empty() && g_conf.pluginPath.back() != ';')
+		g_conf.pluginPath += ";";
+	g_conf.pluginPath += browser->getCurrentPath();
 
 	browser->do_callback();
 

@@ -42,7 +42,7 @@ struct Action;
 
 namespace giada::m::conf
 {
-struct Conf;
+struct Data;
 } // namespace giada::m::conf
 
 namespace giada::v
@@ -72,7 +72,7 @@ protected:
 	static constexpr float MAX_RATIO  = 40000.0f;
 	static constexpr float RATIO_STEP = 1.5f;
 
-	gdBaseActionEditor(ID channelId, m::conf::Conf& c);
+	gdBaseActionEditor(ID channelId, m::conf::Data& c);
 
 	/* getMouseOverContent
 	Returns mouse x-position relative to the viewport content. */
@@ -98,7 +98,7 @@ protected:
 	geSplitScroll m_splitScroll;
 
 	c::actionEditor::Data m_data;
-	m::conf::Conf&        m_conf;
+	m::conf::Data&        m_conf;
 
 private:
 	void refresh() override;

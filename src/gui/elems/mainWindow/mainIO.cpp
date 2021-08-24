@@ -39,9 +39,7 @@
 
 extern giada::v::gdMainWindow* G_MainWin;
 
-namespace giada
-{
-namespace v
+namespace giada::v
 {
 geMainIO::geMainIO(int x, int y)
 : gePack(x, y, Direction::HORIZONTAL)
@@ -127,12 +125,12 @@ void geMainIO::cb_inToOut()
 
 void geMainIO::cb_masterFxOut()
 {
-	u::gui::openSubWindow(G_MainWin, new v::gdPluginList(m::mixer::MASTER_OUT_CHANNEL_ID), WID_FX_LIST);
+	u::gui::openSubWindow(G_MainWin, new v::gdPluginList(m::Mixer::MASTER_OUT_CHANNEL_ID), WID_FX_LIST);
 }
 
 void geMainIO::cb_masterFxIn()
 {
-	u::gui::openSubWindow(G_MainWin, new v::gdPluginList(m::mixer::MASTER_IN_CHANNEL_ID), WID_FX_LIST);
+	u::gui::openSubWindow(G_MainWin, new v::gdPluginList(m::Mixer::MASTER_IN_CHANNEL_ID), WID_FX_LIST);
 }
 
 #endif
@@ -191,5 +189,4 @@ void geMainIO::rebuild()
 	inToOut.value(m_io.inToOut);
 #endif
 }
-} // namespace v
-} // namespace giada
+} // namespace giada::v

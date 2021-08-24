@@ -48,10 +48,12 @@
 #include <cassert>
 
 extern giada::v::gdMainWindow* G_MainWin;
+extern giada::m::model::Model  g_model;
+extern giada::m::MixerHandler  g_mixerHandler;
+extern giada::m::conf::Data    g_conf;
+extern giada::m::patch::Data   g_patch;
 
-namespace giada
-{
-namespace v
+namespace giada::v
 {
 geMainMenu::geMainMenu(int x, int y)
 : gePack(x, y, Direction::HORIZONTAL)
@@ -114,13 +116,13 @@ void geMainMenu::cb_file()
 	if (strcmp(m->label(), "Open project...") == 0)
 	{
 		gdWindow* childWin = new gdBrowserLoad("Open project",
-		    conf::conf.patchPath, c::storage::loadProject, 0);
+		    g_conf.patchPath, c::storage::loadProject, 0);
 		u::gui::openSubWindow(G_MainWin, childWin, WID_FILE_BROWSER);
 	}
 	else if (strcmp(m->label(), "Save project...") == 0)
 	{
-		gdWindow* childWin = new gdBrowserSave("Save project", conf::conf.patchPath,
-		    patch::patch.name, c::storage::saveProject, 0);
+		gdWindow* childWin = new gdBrowserSave("Save project", g_conf.patchPath,
+		    g_patch.name, c::storage::saveProject, 0);
 		u::gui::openSubWindow(G_MainWin, childWin, WID_FILE_BROWSER);
 	}
 	else if (strcmp(m->label(), "Close project") == 0)
@@ -130,7 +132,7 @@ void geMainMenu::cb_file()
 #ifndef NDEBUG
 	else if (strcmp(m->label(), "Debug stats") == 0)
 	{
-		m::model::debug();
+		g_model.debug();
 	}
 #endif
 	else if (strcmp(m->label(), "Quit Giada") == 0)
@@ -152,9 +154,9 @@ void geMainMenu::cb_edit()
 	menu[0].deactivate();
 	menu[1].deactivate();
 
-	if (m::mh::hasAudioData())
+	if (g_mixerHandler.hasAudioData())
 		menu[0].activate();
-	if (m::mh::hasActions())
+	if (g_mixerHandler.hasActions())
 		menu[1].activate();
 
 	Fl_Menu_Button b(0, 0, 100, 50);
@@ -174,6 +176,4 @@ void geMainMenu::cb_edit()
 	else if (strcmp(m->label(), "Setup global MIDI input...") == 0)
 		u::gui::openSubWindow(G_MainWin, new gdMidiInputMaster(), WID_MIDI_INPUT);
 }
-
-} // namespace v
-} // namespace giada
+} // namespace giada::v

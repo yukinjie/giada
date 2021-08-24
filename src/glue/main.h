@@ -35,7 +35,7 @@ struct Data;
 }
 namespace giada::m::model
 {
-struct Clock;
+struct Sequencer;
 struct Mixer;
 } // namespace giada::m::model
 namespace giada::c::main
@@ -43,7 +43,7 @@ namespace giada::c::main
 struct Timer
 {
 	Timer() = default;
-	Timer(const m::model::Clock& c);
+	Timer(const m::model::Sequencer& c);
 
 	float bpm;
 	int   beats;

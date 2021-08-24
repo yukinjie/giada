@@ -34,9 +34,9 @@
 #include "gui/elems/basics/boxtypes.h"
 #include <FL/fl_draw.H>
 
-namespace giada
-{
-namespace v
+extern giada::m::PluginManager g_pluginManager;
+
+namespace giada::v
 {
 gePluginBrowser::gePluginBrowser(int x, int y, int w, int h)
 : Fl_Browser(x, y, w, h)
@@ -78,18 +78,18 @@ void gePluginBrowser::refresh()
 	add("NAME\tMANUFACTURER\tCATEGORY\tFORMAT\tUID");
 	add("---\t---\t---\t---\t---");
 
-	for (int i = 0; i < m::pluginManager::countAvailablePlugins(); i++)
+	for (int i = 0; i < g_pluginManager.countAvailablePlugins(); i++)
 	{
-		m::pluginManager::PluginInfo pi = m::pluginManager::getAvailablePluginInfo(i);
-		std::string                  m  = m::pluginManager::doesPluginExist(pi.uid) ? "" : "@-";
+		m::PluginManager::PluginInfo pi = g_pluginManager.getAvailablePluginInfo(i);
+		std::string                  m  = g_pluginManager.doesPluginExist(pi.uid) ? "" : "@-";
 		std::string                  s  = m + pi.name + "\t" + m + pi.manufacturerName + "\t" + m +
 		                pi.category + "\t" + m + pi.format + "\t" + m + pi.uid;
 		add(s.c_str());
 	}
 
-	for (int i = 0; i < m::pluginManager::countUnknownPlugins(); i++)
+	for (int i = 0; i < g_pluginManager.countUnknownPlugins(); i++)
 	{
-		std::string s = "?\t?\t?\t?\t? " + m::pluginManager::getUnknownPluginInfo(i) + " ?";
+		std::string s = "?\t?\t?\t?\t? " + g_pluginManager.getUnknownPluginInfo(i) + " ?";
 		add(s.c_str());
 	}
 }
@@ -99,9 +99,9 @@ void gePluginBrowser::refresh()
 void gePluginBrowser::computeWidths()
 {
 	int w0, w1, w3;
-	for (int i = 0; i < m::pluginManager::countAvailablePlugins(); i++)
+	for (int i = 0; i < g_pluginManager.countAvailablePlugins(); i++)
 	{
-		m::pluginManager::PluginInfo pi = m::pluginManager::getAvailablePluginInfo(i);
+		m::PluginManager::PluginInfo pi = g_pluginManager.getAvailablePluginInfo(i);
 		w0                              = (int)fl_width(pi.name.c_str());
 		w1                              = (int)fl_width(pi.manufacturerName.c_str());
 		w3                              = (int)fl_width(pi.format.c_str());
@@ -118,7 +118,6 @@ void gePluginBrowser::computeWidths()
 	widths[3] += 60;
 	widths[4] = 0;
 }
-} // namespace v
-} // namespace giada
+} // namespace giada::v
 
 #endif

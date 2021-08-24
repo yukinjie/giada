@@ -26,7 +26,7 @@
  * -------------------------------------------------------------------------- */
 
 #include "pitchTool.h"
-#include "core/clock.h"
+#include "core/sequencer.h"
 #include "core/const.h"
 #include "core/graphics.h"
 #include "core/model/model.h"
@@ -39,6 +39,8 @@
 #include "utils/gui.h"
 #include "utils/string.h"
 #include <FL/Fl.H>
+
+extern giada::m::Sequencer g_sequencer;
 
 namespace giada
 {
@@ -141,7 +143,7 @@ void gePitchTool::cb_setPitchDouble()
 
 void gePitchTool::cb_setPitchToBar()
 {
-	c::events::setChannelPitch(m_data->channelId, m_data->end / (float)m::clock::getFramesInBar(),
+	c::events::setChannelPitch(m_data->channelId, m_data->end / (float)g_sequencer.getFramesInBar(),
 	    Thread::MAIN);
 }
 
@@ -149,7 +151,7 @@ void gePitchTool::cb_setPitchToBar()
 
 void gePitchTool::cb_setPitchToSong()
 {
-	c::events::setChannelPitch(m_data->channelId, m_data->end / (float)m::clock::getFramesInLoop(),
+	c::events::setChannelPitch(m_data->channelId, m_data->end / (float)g_sequencer.getFramesInLoop(),
 	    Thread::MAIN);
 }
 

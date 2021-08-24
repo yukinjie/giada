@@ -26,13 +26,21 @@
 
 #ifdef WITH_VST
 
-#include "plugin.h"
+#include "core/plugins/plugin.h"
+#include "core/conf.h"
 #include "core/const.h"
+#include "core/kernelAudio.h"
 #include "core/plugins/pluginManager.h"
+#include "core/sequencer.h"
 #include "utils/log.h"
 #include "utils/time.h"
 #include <FL/Fl.H>
 #include <cassert>
+
+extern giada::m::PluginManager g_pluginManager;
+extern giada::m::KernelAudio   g_kernelAudio;
+extern giada::m::Sequencer     g_sequencer;
+extern giada::m::conf::Data    g_conf;
 
 namespace giada::m
 {
@@ -41,6 +49,7 @@ Plugin::Plugin(ID id, const std::string& UID)
 , valid(false)
 , onEditorResize(nullptr)
 , m_plugin(nullptr)
+, m_playHead(g_sequencer, g_conf.buffersize)
 , m_UID(UID)
 , m_hasEditor(false)
 {
@@ -54,7 +63,7 @@ Plugin::Plugin(ID id, std::unique_ptr<juce::AudioPluginInstance> plugin, double 
 , valid(true)
 , onEditorResize(nullptr)
 , m_plugin(std::move(plugin))
-, m_playHead(std::make_unique<pluginHost::Info>())
+, m_playHead(g_sequencer, g_conf.buffersize)
 , m_bypass(false)
 , m_hasEditor(m_plugin->hasEditor())
 {
@@ -80,7 +89,7 @@ Plugin::Plugin(ID id, std::unique_ptr<juce::AudioPluginInstance> plugin, double 
 	/* Set pointer to PlayHead, used to pass Giada information (bpm, time, ...)
 	to the plug-in. */
 
-	m_plugin->setPlayHead(m_playHead.get());
+	m_plugin->setPlayHead(&m_playHead);
 
 	m_plugin->prepareToPlay(samplerate, buffersize);
 
@@ -95,7 +104,8 @@ Plugin::Plugin(const Plugin& o)
 , midiInParams(o.midiInParams)
 , valid(o.valid)
 , onEditorResize(o.onEditorResize)
-, m_plugin(std::move(pluginManager::makePlugin(o)->m_plugin))
+, m_plugin(std::move(g_pluginManager.makePlugin(o, g_conf.samplerate, g_kernelAudio.getRealBufSize())->m_plugin))
+, m_playHead(g_sequencer, g_conf.buffersize)
 , m_bypass(o.m_bypass.load())
 {
 }

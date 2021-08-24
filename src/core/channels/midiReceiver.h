@@ -29,26 +29,21 @@
 
 #ifdef WITH_VST
 
+#include "core/sequencer.h"
+
 namespace giada::m::channel
 {
 struct Data;
 }
-namespace giada::m::eventDispatcher
-{
-struct Event;
-}
-namespace giada::m::sequencer
-{
-struct Event;
-}
+
 namespace giada::m::midiReceiver
 {
 struct Data
 {
 };
 
-void react(const channel::Data& ch, const eventDispatcher::Event& e);
-void advance(const channel::Data& ch, const sequencer::Event& e);
+void react(const channel::Data& ch, const EventDispatcher::Event& e);
+void advance(const channel::Data& ch, const Sequencer::Event& e);
 void render(const channel::Data& ch);
 } // namespace giada::m::midiReceiver
 

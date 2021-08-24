@@ -26,9 +26,7 @@
 
 #include "samplePlayer.h"
 #include "core/channels/channel.h"
-#include "core/clock.h"
 #include "core/wave.h"
-#include "core/waveManager.h"
 #include "deps/mcl-audio-buffer/src/audioBuffer.hpp"
 #include <algorithm>
 #include <cassert>
@@ -100,7 +98,7 @@ Data::Data(Resampler* r)
 
 /* -------------------------------------------------------------------------- */
 
-Data::Data(const patch::Channel& p, float samplerateRatio, Resampler* r)
+Data::Data(const patch::Channel& p, float samplerateRatio, Resampler* r, Wave* w)
 : pitch(p.pitch)
 , mode(p.mode)
 , shift(p.shift)
@@ -109,7 +107,7 @@ Data::Data(const patch::Channel& p, float samplerateRatio, Resampler* r)
 , velocityAsVol(p.midiInVeloAsVol)
 , waveReader(r)
 {
-	setWave_(*this, waveManager::hydrateWave(p.waveId), samplerateRatio);
+	setWave_(*this, w, samplerateRatio);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -153,15 +151,15 @@ Frame Data::getWaveSize() const
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-void react(channel::Data& ch, const eventDispatcher::Event& e)
+void react(channel::Data& ch, const EventDispatcher::Event& e)
 {
-	if (e.type == eventDispatcher::EventType::CHANNEL_PITCH)
+	if (e.type == EventDispatcher::EventType::CHANNEL_PITCH)
 		ch.samplePlayer->pitch = std::get<float>(e.data);
 }
 
 /* -------------------------------------------------------------------------- */
 
-void advance(const channel::Data& ch, const sequencer::Event& e)
+void advance(const channel::Data& ch, const Sequencer::Event& e)
 {
 	sampleAdvancer::advance(ch, e);
 }

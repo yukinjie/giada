@@ -44,9 +44,9 @@
 #include "midiInputChannel.h"
 #include "utils/string.h"
 
-namespace giada
-{
-namespace v
+extern giada::m::conf::Data g_conf;
+
+namespace giada::v
 {
 geChannelLearnerPack::geChannelLearnerPack(int x, int y, const c::io::Channel_InputData& channel)
 : geMidiLearnerPack(x, y, "Channel")
@@ -115,10 +115,10 @@ void gePluginLearnerPack::update(const c::io::PluginData& d, bool enabled)
 /* -------------------------------------------------------------------------- */
 
 gdMidiInputChannel::gdMidiInputChannel(ID channelId)
-: gdMidiInputBase(m::conf::conf.midiInputX,
-      m::conf::conf.midiInputY,
-      m::conf::conf.midiInputW,
-      m::conf::conf.midiInputH)
+: gdMidiInputBase(g_conf.midiInputX,
+      g_conf.midiInputY,
+      g_conf.midiInputW,
+      g_conf.midiInputH)
 , m_channelId(channelId)
 , m_data(c::io::channel_getInputData(channelId))
 {
@@ -257,5 +257,4 @@ void gdMidiInputChannel::cb_setChannel()
 	c::io::channel_setMidiInputFilter(m_data.channelId,
 	    m_channel->value() == 0 ? -1 : m_channel->value() - 1);
 }
-} // namespace v
-} // namespace giada
+} // namespace giada::v

@@ -30,11 +30,13 @@
 #include "utils/gui.h"
 #include <FL/Fl.H>
 
+extern giada::m::model::Model g_model;
+
 namespace giada::v::updater
 {
 void init()
 {
-	m::model::onSwap([](m::model::SwapType type) {
+	g_model.onSwap = [](m::model::SwapType type) {
 		if (type == m::model::SwapType::NONE)
 			return;
 
@@ -44,7 +46,7 @@ void init()
 		Fl::lock();
 		type == m::model::SwapType::HARD ? u::gui::rebuild() : u::gui::refresh();
 		Fl::unlock();
-	});
+	};
 
 	Fl::add_timeout(G_GUI_REFRESH_RATE, update, nullptr);
 }

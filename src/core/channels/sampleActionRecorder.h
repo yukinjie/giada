@@ -27,21 +27,20 @@
 #ifndef G_CHANNEL_SAMPLE_ACTION_RECORDER_H
 #define G_CHANNEL_SAMPLE_ACTION_RECORDER_H
 
+#include "core/eventDispatcher.h"
+
 namespace giada::m::channel
 {
 struct Data;
 }
-namespace giada::m::eventDispatcher
-{
-struct Event;
-}
+
 namespace giada::m::sampleActionRecorder
 {
 struct Data
 {
 };
 
-void react(channel::Data& ch, const eventDispatcher::Event& e);
+void react(channel::Data& ch, const EventDispatcher::Event& e);
 } // namespace giada::m::sampleActionRecorder
 
 #endif

@@ -27,20 +27,19 @@
 #ifndef G_CHANNEL_MIDI_LIGHTER_H
 #define G_CHANNEL_MIDI_LIGHTER_H
 
+#include "core/eventDispatcher.h"
 #include "core/midiLearnParam.h"
 
 namespace giada::m::channel
 {
 struct Data;
 }
+
 namespace giada::m::patch
 {
 struct Channel;
 }
-namespace giada::m::eventDispatcher
-{
-struct Event;
-}
+
 namespace giada::m::midiLighter
 {
 struct Data
@@ -61,7 +60,7 @@ struct Data
 	MidiLearnParam solo;
 };
 
-void react(channel::Data& ch, const eventDispatcher::Event& e, bool audible);
+void react(channel::Data& ch, const EventDispatcher::Event& e, bool audible);
 } // namespace giada::m::midiLighter
 
 #endif

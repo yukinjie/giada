@@ -55,6 +55,7 @@ namespace giada::m
 {
 class Plugin;
 }
+
 namespace giada::m::channel
 {
 struct State
@@ -88,7 +89,7 @@ struct Buffer
 struct Data
 {
 	Data(ChannelType t, ID id, ID columnId, State& state, Buffer& buffer);
-	Data(const patch::Channel& p, State& state, Buffer& buffer, float samplerateRatio);
+	Data(const patch::Channel& p, State& state, Buffer& buffer, float samplerateRatio, Wave* w);
 	Data(const Data& o) = default;
 	Data(Data&& o)      = default;
 	Data& operator=(const Data&) = default;
@@ -142,13 +143,13 @@ struct Data
 Advances internal state by processing static events (e.g. pre-recorded 
 actions or sequencer events) in the current block. */
 
-void advance(const Data& d, const sequencer::EventBuffer& e);
+void advance(const Data& d, const Sequencer::EventBuffer& e);
 
 /* react
 Reacts to live events coming from the EventDispatcher (human events) and
 updates itself accordingly. */
 
-void react(Data& d, const eventDispatcher::EventBuffer& e, bool audible);
+void react(Data& d, const EventDispatcher::EventBuffer& e, bool audible);
 
 /* render
 Renders audio data to I/O buffers. */

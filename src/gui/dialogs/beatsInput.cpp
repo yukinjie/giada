@@ -25,10 +25,10 @@
  * -------------------------------------------------------------------------- */
 
 #include "beatsInput.h"
-#include "core/clock.h"
 #include "core/conf.h"
 #include "core/const.h"
 #include "core/mixer.h"
+#include "core/sequencer.h"
 #include "glue/main.h"
 #include "gui/elems/basics/button.h"
 #include "gui/elems/basics/check.h"
@@ -39,6 +39,7 @@
 #include <cstring>
 
 extern giada::v::gdMainWindow* mainWin;
+extern giada::m::Sequencer     g_sequencer;
 
 namespace giada
 {
@@ -55,11 +56,11 @@ gdBeatsInput::gdBeatsInput()
 	end();
 
 	beats->maximum_size(2);
-	beats->value(std::to_string(m::clock::getBeats()).c_str());
+	beats->value(std::to_string(g_sequencer.getBeats()).c_str());
 	beats->type(FL_INT_INPUT);
 
 	bars->maximum_size(2);
-	bars->value(std::to_string(m::clock::getBars()).c_str());
+	bars->value(std::to_string(g_sequencer.getBars()).c_str());
 	bars->type(FL_INT_INPUT);
 
 	ok->shortcut(FL_Enter);

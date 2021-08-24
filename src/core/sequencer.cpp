@@ -24,73 +24,165 @@
  *
  * -------------------------------------------------------------------------- */
 
-#include "sequencer.h"
-#include "core/clock.h"
-#include "core/conf.h"
-#include "core/const.h"
+#include "core/sequencer.h"
+#include "core/actions/actionRecorder.h"
 #include "core/kernelAudio.h"
 #include "core/metronome.h"
-#include "core/mixer.h"
 #include "core/model/model.h"
 #include "core/quantizer.h"
-#include "core/recManager.h"
+#include "core/synchronizer.h"
+#include "utils/log.h"
+#include "utils/math.h"
 
-namespace giada::m::sequencer
+namespace giada::m
 {
 namespace
 {
 constexpr int Q_ACTION_REWIND = 0;
-
-/* eventBuffer_
-Buffer of events found in each block sent to channels for event parsing. This is 
-filled during react(). */
-
-EventBuffer eventBuffer_;
-
-Metronome metronome_;
-
-/* -------------------------------------------------------------------------- */
-
-void rewindQ_(Frame delta)
-{
-	clock::rewind();
-	eventBuffer_.push_back({EventType::REWIND, 0, delta});
-}
 } // namespace
 
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-Quantizer quantizer;
-
+Sequencer::Sequencer(model::Model& m, Synchronizer& s, JackTransport& j)
+: onAboutStart(nullptr)
+, onAboutStop(nullptr)
+, m_model(m)
+, m_synchronizer(s)
+, m_jackTransport(j)
+, m_quantizerStep(1)
+{
+	quantizer.schedule(Q_ACTION_REWIND, [this](Frame delta) { rewindQ(delta); });
+}
 /* -------------------------------------------------------------------------- */
 
-void init()
+bool Sequencer::isRunning() const
 {
-	quantizer.schedule(Q_ACTION_REWIND, rewindQ_);
-	clock::rewind();
+	return m_model.get().sequencer.status == SeqStatus::RUNNING;
 }
 
 /* -------------------------------------------------------------------------- */
 
-void react(const eventDispatcher::EventBuffer& events)
+bool Sequencer::isActive() const
 {
-	for (const eventDispatcher::Event& e : events)
+	const model::Sequencer& c = m_model.get().sequencer;
+	return c.status == SeqStatus::RUNNING || c.status == SeqStatus::WAITING;
+}
+/* -------------------------------------------------------------------------- */
+
+bool Sequencer::isOnBar() const
+{
+	const model::Sequencer& c = m_model.get().sequencer;
+
+	int currentFrame = c.state->currentFrame.load();
+
+	if (c.status == SeqStatus::WAITING || currentFrame == 0)
+		return false;
+	return currentFrame % c.framesInBar == 0;
+}
+
+/* -------------------------------------------------------------------------- */
+
+bool Sequencer::isOnBeat() const
+{
+	const model::Sequencer& c = m_model.get().sequencer;
+
+	if (c.status == SeqStatus::WAITING)
+		return c.state->currentFrameWait.load() % c.framesInBeat == 0;
+	return c.state->currentFrame.load() % c.framesInBeat == 0;
+}
+
+/* -------------------------------------------------------------------------- */
+
+bool Sequencer::isOnFirstBeat() const
+{
+	return m_model.get().sequencer.state->currentFrame.load() == 0;
+}
+/* -------------------------------------------------------------------------- */
+
+float     Sequencer::getBpm() const { return m_model.get().sequencer.bpm; }
+int       Sequencer::getBeats() const { return m_model.get().sequencer.beats; }
+int       Sequencer::getBars() const { return m_model.get().sequencer.bars; }
+int       Sequencer::getCurrentBeat() const { return m_model.get().sequencer.state->currentBeat.load(); }
+int       Sequencer::getCurrentFrame() const { return m_model.get().sequencer.state->currentFrame.load(); }
+float     Sequencer::getCurrentSecond(int sampleRate) const { return getCurrentFrame() / static_cast<float>(sampleRate); }
+int       Sequencer::getFramesInBar() const { return m_model.get().sequencer.framesInBar; }
+int       Sequencer::getFramesInBeat() const { return m_model.get().sequencer.framesInBeat; }
+int       Sequencer::getFramesInLoop() const { return m_model.get().sequencer.framesInLoop; }
+int       Sequencer::getFramesInSeq() const { return m_model.get().sequencer.framesInSeq; }
+int       Sequencer::getQuantizerValue() const { return m_model.get().sequencer.quantize; }
+int       Sequencer::getQuantizerStep() const { return m_quantizerStep; }
+SeqStatus Sequencer::getStatus() const { return m_model.get().sequencer.status; }
+
+/* -------------------------------------------------------------------------- */
+
+Frame Sequencer::getMaxFramesInLoop(int sampleRate) const
+{
+	return (sampleRate * (60.0f / G_MIN_BPM)) * getBeats();
+}
+
+/* -------------------------------------------------------------------------- */
+
+float Sequencer::calcBpmFromRec(Frame recordedFrames, int sampleRate) const
+{
+	return (60.0f * getBeats()) / (recordedFrames / static_cast<float>(sampleRate));
+}
+
+/* -------------------------------------------------------------------------- */
+
+bool Sequencer::canQuantize() const
+{
+	const model::Sequencer& s = m_model.get().sequencer;
+
+	return s.quantize > 0 && s.status == SeqStatus::RUNNING;
+}
+
+/* -------------------------------------------------------------------------- */
+
+Frame Sequencer::quantize(Frame f) const
+{
+	if (!canQuantize())
+		return f;
+	return u::math::quantize(f, m_quantizerStep) % getFramesInLoop(); // No overflow
+}
+
+/* -------------------------------------------------------------------------- */
+
+void Sequencer::reset(int sampleRate)
+{
+	model::Sequencer& s = m_model.get().sequencer;
+
+	s.bars     = G_DEFAULT_BARS;
+	s.beats    = G_DEFAULT_BEATS;
+	s.bpm      = G_DEFAULT_BPM;
+	s.quantize = G_DEFAULT_QUANTIZE;
+	recomputeFrames(sampleRate); // Model swap is done here, no need to call it twice
+	rewind();
+}
+
+/* -------------------------------------------------------------------------- */
+
+void Sequencer::react(const EventDispatcher::EventBuffer& events)
+{
+	for (const EventDispatcher::Event& e : events)
 	{
-		if (e.type == eventDispatcher::EventType::SEQUENCER_START)
+		if (e.type == EventDispatcher::EventType::SEQUENCER_START)
 		{
-			start();
+			if (!m_jackTransport.start())
+				rawStart();
 			break;
 		}
-		if (e.type == eventDispatcher::EventType::SEQUENCER_STOP)
+		if (e.type == EventDispatcher::EventType::SEQUENCER_STOP)
 		{
-			stop();
+			if (!m_jackTransport.stop())
+				rawStop();
 			break;
 		}
-		if (e.type == eventDispatcher::EventType::SEQUENCER_REWIND)
+		if (e.type == EventDispatcher::EventType::SEQUENCER_REWIND)
 		{
-			rewind();
+			if (!m_jackTransport.setPosition(0))
+				rawRewind();
 			break;
 		}
 	}
@@ -98,15 +190,17 @@ void react(const eventDispatcher::EventBuffer& events)
 
 /* -------------------------------------------------------------------------- */
 
-const EventBuffer& advance(Frame bufferSize)
+const Sequencer::EventBuffer& Sequencer::advance(Frame bufferSize, const ActionRecorder& actionRecorder)
 {
-	eventBuffer_.clear();
+	m_eventBuffer.clear();
 
-	const Frame start        = clock::getCurrentFrame();
+	const Frame start        = getCurrentFrame();
 	const Frame end          = start + bufferSize;
-	const Frame framesInLoop = clock::getFramesInLoop();
-	const Frame framesInBar  = clock::getFramesInBar();
-	const Frame framesInBeat = clock::getFramesInBeat();
+	const Frame framesInLoop = getFramesInLoop();
+	const Frame framesInBar  = getFramesInBar();
+	const Frame framesInBeat = getFramesInBeat();
+
+	/* Process events in the current block. */
 
 	for (Frame i = start, local = 0; i < end; i++, local++)
 	{
@@ -115,51 +209,57 @@ const EventBuffer& advance(Frame bufferSize)
 
 		if (global == 0)
 		{
-			eventBuffer_.push_back({EventType::FIRST_BEAT, global, local});
-			metronome_.trigger(Metronome::Click::BEAT, local);
+			m_eventBuffer.push_back({EventType::FIRST_BEAT, global, local});
+			m_metronome.trigger(Metronome::Click::BEAT, local);
 		}
 		else if (global % framesInBar == 0)
 		{
-			eventBuffer_.push_back({EventType::BAR, global, local});
-			metronome_.trigger(Metronome::Click::BAR, local);
+			m_eventBuffer.push_back({EventType::BAR, global, local});
+			m_metronome.trigger(Metronome::Click::BAR, local);
 		}
 		else if (global % framesInBeat == 0)
 		{
-			metronome_.trigger(Metronome::Click::BEAT, local);
+			m_metronome.trigger(Metronome::Click::BEAT, local);
 		}
 
-		const std::vector<Action>* as = recorder::getActionsOnFrame(global);
+		const std::vector<Action>* as = actionRecorder.getActionsOnFrame(global);
 		if (as != nullptr)
-			eventBuffer_.push_back({EventType::ACTIONS, global, local, as});
+			m_eventBuffer.push_back({EventType::ACTIONS, global, local, as});
 	}
 
-	/* Advance clock and quantizer after the event parsing. */
-	clock::advance(bufferSize);
-	quantizer.advance(Range<Frame>(start, end), clock::getQuantizerStep());
+	/* Advance this and quantizer after the event parsing. */
 
-	return eventBuffer_;
+	advance(bufferSize);
+	quantizer.advance(Range<Frame>(start, end), getQuantizerStep());
+
+	return m_eventBuffer;
 }
 
 /* -------------------------------------------------------------------------- */
 
-void render(mcl::AudioBuffer& outBuf)
+void Sequencer::render(mcl::AudioBuffer& outBuf)
 {
-	if (metronome_.running)
-		metronome_.render(outBuf);
+	if (m_metronome.running)
+		m_metronome.render(outBuf);
 }
 
 /* -------------------------------------------------------------------------- */
 
-void rawStart()
+void Sequencer::rawStart()
 {
-	switch (clock::getStatus())
+	assert(onAboutStart != nullptr);
+
+	const SeqStatus status = getStatus();
+
+	onAboutStart(status);
+
+	switch (status)
 	{
-	case ClockStatus::STOPPED:
-		clock::setStatus(ClockStatus::RUNNING);
+	case SeqStatus::STOPPED:
+		setStatus(SeqStatus::RUNNING);
 		break;
-	case ClockStatus::WAITING:
-		clock::setStatus(ClockStatus::RUNNING);
-		recManager::stopActionRec();
+	case SeqStatus::WAITING:
+		setStatus(SeqStatus::RUNNING);
 		break;
 	default:
 		break;
@@ -168,68 +268,160 @@ void rawStart()
 
 /* -------------------------------------------------------------------------- */
 
-void rawStop()
+void Sequencer::rawStop()
 {
-	clock::setStatus(ClockStatus::STOPPED);
+	assert(onAboutStop != nullptr);
 
-	/* If recordings (both input and action) are active deactivate them, but 
-	store the takes. RecManager takes care of it. */
-
-	if (recManager::isRecordingAction())
-		recManager::stopActionRec();
-	else if (recManager::isRecordingInput())
-		recManager::stopInputRec(conf::conf.inputRecMode);
+	onAboutStop();
+	setStatus(SeqStatus::STOPPED);
 }
 
 /* -------------------------------------------------------------------------- */
 
-void rawRewind()
+void Sequencer::rawRewind()
 {
-	if (clock::canQuantize())
+	if (canQuantize())
 		quantizer.trigger(Q_ACTION_REWIND);
 	else
-		rewindQ_(/*delta=*/0);
+		rewindQ(/*delta=*/0);
 }
 
 /* -------------------------------------------------------------------------- */
 
-void start()
+void Sequencer::rewind()
 {
-#ifdef WITH_AUDIO_JACK
-	if (kernelAudio::getAPI() == G_SYS_API_JACK)
-		kernelAudio::jackStart();
-	else
-#endif
-		rawStart();
+	const model::Sequencer& c = m_model.get().sequencer;
+
+	c.state->currentFrame.store(0);
+	c.state->currentBeat.store(0);
+	c.state->currentFrameWait.store(0);
 }
 
 /* -------------------------------------------------------------------------- */
 
-void stop()
+bool Sequencer::isMetronomeOn() const { return m_metronome.running; }
+void Sequencer::toggleMetronome() { m_metronome.running = !m_metronome.running; }
+void Sequencer::setMetronome(bool v) { m_metronome.running = v; }
+
+/* -------------------------------------------------------------------------- */
+
+void Sequencer::rewindQ(Frame delta)
 {
-#ifdef WITH_AUDIO_JACK
-	if (kernelAudio::getAPI() == G_SYS_API_JACK)
-		kernelAudio::jackStop();
-	else
-#endif
-		rawStop();
+	rewind();
+	m_eventBuffer.push_back({EventType::REWIND, 0, delta});
 }
 
 /* -------------------------------------------------------------------------- */
 
-void rewind()
+void Sequencer::recomputeFrames(int sampleRate)
 {
-#ifdef WITH_AUDIO_JACK
-	if (kernelAudio::getAPI() == G_SYS_API_JACK)
-		kernelAudio::jackSetPosition(0);
-	else
-#endif
-		rawRewind();
+	model::Sequencer& s = m_model.get().sequencer;
+
+	s.framesInLoop = static_cast<int>((sampleRate * (60.0f / s.bpm)) * s.beats);
+	s.framesInBar  = static_cast<int>(s.framesInLoop / (float)s.bars);
+	s.framesInBeat = static_cast<int>(s.framesInLoop / (float)s.beats);
+	s.framesInSeq  = s.framesInBeat * G_MAX_BEATS;
+
+	if (s.quantize != 0)
+		m_quantizerStep = s.framesInBeat / s.quantize;
+
+	m_model.swap(model::SwapType::NONE);
 }
 
 /* -------------------------------------------------------------------------- */
 
-bool isMetronomeOn() { return metronome_.running; }
-void toggleMetronome() { metronome_.running = !metronome_.running; }
-void setMetronome(bool v) { metronome_.running = v; }
-} // namespace giada::m::sequencer
+void Sequencer::setBpm(float b, int sampleRate)
+{
+	b = std::clamp(b, G_MIN_BPM, G_MAX_BPM);
+
+	/* If JACK is being used, let it handle the bpm change. */
+	if (!m_jackTransport.setBpm(b))
+		rawSetBpm(b, sampleRate);
+}
+
+/* -------------------------------------------------------------------------- */
+
+void Sequencer::rawSetBpm(float v, int sampleRate)
+{
+	assert(onBpmChange != nullptr);
+
+	const float oldVal = m_model.get().sequencer.bpm;
+	const float newVal = v;
+
+	m_model.get().sequencer.bpm = newVal;
+	recomputeFrames(sampleRate);
+	m_model.swap(model::SwapType::HARD);
+
+	onBpmChange(oldVal, newVal, m_quantizerStep);
+
+	u::log::print("[clock::rawSetBpm] Bpm changed to %f\n", newVal);
+}
+/* -------------------------------------------------------------------------- */
+
+void Sequencer::setBeats(int newBeats, int newBars, int sampleRate)
+{
+	newBeats = std::clamp(newBeats, 1, G_MAX_BEATS);
+	newBars  = std::clamp(newBars, 1, newBeats); // Bars cannot be greater than beats
+
+	m_model.get().sequencer.beats = newBeats;
+	m_model.get().sequencer.bars  = newBars;
+	recomputeFrames(sampleRate);
+
+	m_model.swap(model::SwapType::HARD);
+}
+
+/* -------------------------------------------------------------------------- */
+
+void Sequencer::setQuantize(int q, int sampleRate)
+{
+	m_model.get().sequencer.quantize = q;
+	recomputeFrames(sampleRate);
+
+	m_model.swap(model::SwapType::HARD);
+}
+
+/* -------------------------------------------------------------------------- */
+
+void Sequencer::setStatus(SeqStatus s)
+{
+	m_model.get().sequencer.status = s;
+	m_model.swap(model::SwapType::SOFT);
+
+	/* Additional things to do when the status changes. */
+
+	switch (s)
+	{
+	case SeqStatus::WAITING:
+		rewind();
+		m_synchronizer.sendMIDIrewind();
+		break;
+	case SeqStatus::STOPPED:
+		m_synchronizer.sendMIDIstop();
+		break;
+	case SeqStatus::RUNNING:
+		m_synchronizer.sendMIDIstart();
+		break;
+	default:
+		break;
+	}
+}
+/* -------------------------------------------------------------------------- */
+
+void Sequencer::advance(Frame amount)
+{
+	const model::Sequencer& s = m_model.get().sequencer;
+
+	if (s.status == SeqStatus::WAITING)
+	{
+		int f = (s.state->currentFrameWait.load() + amount) % s.framesInLoop;
+		s.state->currentFrameWait.store(f);
+		return;
+	}
+
+	int f = (s.state->currentFrame.load() + amount) % s.framesInLoop;
+	int b = f / s.framesInBeat;
+
+	s.state->currentFrame.store(f);
+	s.state->currentBeat.store(b);
+}
+} // namespace giada::m

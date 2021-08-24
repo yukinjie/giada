@@ -37,39 +37,78 @@ namespace giada::m::kernelAudio
 {
 struct JackState;
 }
-namespace giada::m::sync
+
+namespace giada::m::conf
 {
-void init(int sampleRate, float midiTCfps);
+struct Data;
+}
 
-/* sendMIDIsync
-Generates MIDI sync output data. */
+namespace giada::m::model
+{
+struct Sequencer;
+}
 
-void sendMIDIsync();
+namespace giada::m
+{
+class KernelMidi;
+class Synchronizer final
+{
+public:
+	Synchronizer(const conf::Data&, KernelMidi&);
 
-/* sendMIDIrewind
-Rewinds timecode to beat 0 and also send a MTC full frame to cue the slave. */
+	/* reset
+	Brings everything back to the initial state. */
 
-void sendMIDIrewind();
+	void reset();
 
-void sendMIDIstart();
-void sendMIDIstop();
+	/* sendMIDIsync
+    Generates MIDI sync output data. */
+
+	void sendMIDIsync(const model::Sequencer& clock);
+
+	/* sendMIDIrewind
+    Rewinds timecode to beat 0 and also send a MTC full frame to cue the slave. */
+
+	void sendMIDIrewind();
+
+	void sendMIDIstart();
+	void sendMIDIstop();
 
 #ifdef WITH_AUDIO_JACK
 
-/* recvJackSync
-Receives a new JACK state. Called by Kernel Audio on each audio block. */
+	/* recvJackSync
+    Receives a new JACK state. Called by Kernel Audio on each audio block. */
 
-void recvJackSync(const JackTransport::State& state);
+	void recvJackSync(const JackTransport::State& state);
 
-/* onJack[...]
-Callbacks called when something happens in the JACK state. */
+	/* onJack[...]
+    Callbacks called when something happens in the JACK state. */
 
-extern std::function<void()>      onJackRewind;
-extern std::function<void(float)> onJackChangeBpm;
-extern std::function<void()>      onJackStart;
-extern std::function<void()>      onJackStop;
+	std::function<void()>      onJackRewind;
+	std::function<void(float)> onJackChangeBpm;
+	std::function<void()>      onJackStart;
+	std::function<void()>      onJackStop;
+#endif
+
+private:
+	/* midiTC*
+    MIDI timecode variables. */
+
+	int m_midiTCrate    = 0; // Send MTC data every m_midiTCrate frames
+	int m_midiTCframes  = 0;
+	int m_midiTCseconds = 0;
+	int m_midiTCminutes = 0;
+	int m_midiTChours   = 0;
+
+#ifdef WITH_AUDIO_JACK
+
+	JackTransport::State m_jackStatePrev;
 
 #endif
-} // namespace giada::m::sync
+
+	KernelMidi&       m_kernelMidi;
+	const conf::Data& m_conf;
+};
+} // namespace giada::m
 
 #endif

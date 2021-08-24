@@ -25,7 +25,6 @@
  * -------------------------------------------------------------------------- */
 
 #include "main.h"
-#include "core/clock.h"
 #include "core/conf.h"
 #include "core/const.h"
 #include "core/init.h"
@@ -36,15 +35,17 @@
 #include "core/model/model.h"
 #include "core/plugins/pluginHost.h"
 #include "core/plugins/pluginManager.h"
-#include "core/recManager.h"
 #include "core/recorder.h"
-#include "core/recorderHandler.h"
+#include "core/sequencer.h"
+#include "core/synchronizer.h"
 #include "gui/dialogs/mainWindow.h"
 #include "gui/dialogs/warnings.h"
 #include "gui/elems/mainWindow/keyboard/keyboard.h"
 #include "gui/elems/mainWindow/keyboard/sampleChannel.h"
 #include "gui/elems/mainWindow/mainIO.h"
 #include "gui/elems/mainWindow/mainTimer.h"
+#include "src/core/actions/actionRecorder.h"
+#include "src/core/actions/actions.h"
 #include "utils/gui.h"
 #include "utils/log.h"
 #include "utils/string.h"
@@ -52,17 +53,26 @@
 #include <cassert>
 #include <cmath>
 
-extern giada::v::gdMainWindow* G_MainWin;
+extern giada::v::gdMainWindow*  G_MainWin;
+extern giada::m::model::Model   g_model;
+extern giada::m::KernelAudio    g_kernelAudio;
+extern giada::m::Mixer          g_mixer;
+extern giada::m::MixerHandler   g_mixerHandler;
+extern giada::m::ActionRecorder g_actionRecorder;
+extern giada::m::Recorder       g_recorder;
+extern giada::m::Sequencer      g_sequencer;
+extern giada::m::Synchronizer   g_synchronizer;
+extern giada::m::conf::Data     g_conf;
 
 namespace giada::c::main
 {
-Timer::Timer(const m::model::Clock& c)
+Timer::Timer(const m::model::Sequencer& c)
 : bpm(c.bpm)
 , beats(c.beats)
 , bars(c.bars)
 , quantize(c.quantize)
-, isUsingJack(m::kernelAudio::getAPI() == G_SYS_API_JACK)
-, isRecordingInput(m::recManager::isRecordingInput())
+, isUsingJack(g_kernelAudio.getAPI() == G_SYS_API_JACK)
+, isRecordingInput(g_recorder.isRecordingInput())
 {
 }
 
@@ -85,19 +95,19 @@ IO::IO(const m::channel::Data& out, const m::channel::Data& in, const m::model::
 
 Peak IO::getMasterOutPeak()
 {
-	return m::mixer::getPeakOut();
+	return g_mixer.getPeakOut();
 }
 
 Peak IO::getMasterInPeak()
 {
-	return m::mixer::getPeakIn();
+	return g_mixer.getPeakIn();
 }
 
 /* -------------------------------------------------------------------------- */
 
 bool IO::isKernelReady()
 {
-	return m::kernelAudio::isReady();
+	return g_kernelAudio.isReady();
 }
 
 /* -------------------------------------------------------------------------- */
@@ -106,16 +116,16 @@ bool IO::isKernelReady()
 
 Timer getTimer()
 {
-	return Timer(m::model::get().clock);
+	return Timer(g_model.get().sequencer);
 }
 
 /* -------------------------------------------------------------------------- */
 
 IO getIO()
 {
-	return IO(m::model::get().getChannel(m::mixer::MASTER_OUT_CHANNEL_ID),
-	    m::model::get().getChannel(m::mixer::MASTER_IN_CHANNEL_ID),
-	    m::model::get().mixer);
+	return IO(g_model.get().getChannel(m::Mixer::MASTER_OUT_CHANNEL_ID),
+	    g_model.get().getChannel(m::Mixer::MASTER_IN_CHANNEL_ID),
+	    g_model.get().mixer);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -124,13 +134,13 @@ Sequencer getSequencer()
 {
 	Sequencer out;
 
-	m::mixer::RecordInfo recInfo = m::mixer::getRecordInfo();
+	m::Mixer::RecordInfo recInfo = g_mixer.getRecordInfo();
 
-	out.isFreeModeInputRec = m::recManager::isRecordingInput() && m::conf::conf.inputRecMode == InputRecMode::FREE;
-	out.shouldBlink        = u::gui::shouldBlink() && (m::clock::getStatus() == ClockStatus::WAITING || out.isFreeModeInputRec);
-	out.beats              = m::clock::getBeats();
-	out.bars               = m::clock::getBars();
-	out.currentBeat        = m::clock::getCurrentBeat();
+	out.isFreeModeInputRec = g_recorder.isRecordingInput() && g_conf.inputRecMode == InputRecMode::FREE;
+	out.shouldBlink        = u::gui::shouldBlink() && (g_sequencer.getStatus() == SeqStatus::WAITING || out.isFreeModeInputRec);
+	out.beats              = g_sequencer.getBeats();
+	out.bars               = g_sequencer.getBars();
+	out.currentBeat        = g_sequencer.getCurrentBeat();
 	out.recPosition        = recInfo.position;
 	out.recMaxLength       = recInfo.maxLength;
 
@@ -143,10 +153,10 @@ void setBpm(const char* i, const char* f)
 {
 	/* Never change this stuff while recording audio. */
 
-	if (m::recManager::isRecordingInput())
+	if (g_recorder.isRecordingInput())
 		return;
 
-	m::clock::setBpm(std::atof(i) + (std::atof(f) / 10.0f));
+	g_sequencer.setBpm(std::atof(i) + (std::atof(f) / 10.0f), g_conf.samplerate);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -155,10 +165,10 @@ void setBpm(float f)
 {
 	/* Never change this stuff while recording audio. */
 
-	if (m::recManager::isRecordingInput())
+	if (g_recorder.isRecordingInput())
 		return;
 
-	m::clock::setBpm(f);
+	g_sequencer.setBpm(f, g_conf.samplerate);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -167,18 +177,18 @@ void setBeats(int beats, int bars)
 {
 	/* Never change this stuff while recording audio. */
 
-	if (m::recManager::isRecordingInput())
+	if (g_recorder.isRecordingInput())
 		return;
 
-	m::clock::setBeats(beats, bars);
-	m::mixer::allocRecBuffer(m::clock::getMaxFramesInLoop());
+	g_sequencer.setBeats(beats, bars, g_conf.samplerate);
+	g_mixer.allocRecBuffer(g_sequencer.getMaxFramesInLoop(g_conf.samplerate));
 }
 
 /* -------------------------------------------------------------------------- */
 
 void quantize(int val)
 {
-	m::clock::setQuantize(val);
+	g_sequencer.setQuantize(val, g_conf.samplerate);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -188,9 +198,10 @@ void clearAllSamples()
 	if (!v::gdConfirmWin("Warning", "Free all Sample channels: are you sure?"))
 		return;
 	G_MainWin->delSubWindow(WID_SAMPLE_EDITOR);
-	m::clock::setStatus(ClockStatus::STOPPED);
-	m::mh::freeAllChannels();
-	m::recorderHandler::clearAllActions();
+	g_sequencer.setStatus(SeqStatus::STOPPED);
+	g_synchronizer.sendMIDIstop();
+	g_mixerHandler.freeAllChannels();
+	g_actionRecorder.clearAllActions();
 }
 
 /* -------------------------------------------------------------------------- */
@@ -200,38 +211,38 @@ void clearAllActions()
 	if (!v::gdConfirmWin("Warning", "Clear all actions: are you sure?"))
 		return;
 	G_MainWin->delSubWindow(WID_ACTION_EDITOR);
-	m::recorderHandler::clearAllActions();
+	g_actionRecorder.clearAllActions();
 }
 
 /* -------------------------------------------------------------------------- */
 
 void setInToOut(bool v)
 {
-	m::mh::setInToOut(v);
+	g_mixerHandler.setInToOut(v);
 }
 
 /* -------------------------------------------------------------------------- */
 
 void toggleRecOnSignal()
 {
-	if (!m::recManager::canEnableRecOnSignal())
+	if (!g_recorder.canEnableRecOnSignal())
 	{
-		m::conf::conf.recTriggerMode = RecTriggerMode::NORMAL;
+		g_conf.recTriggerMode = RecTriggerMode::NORMAL;
 		return;
 	}
-	m::conf::conf.recTriggerMode = m::conf::conf.recTriggerMode == RecTriggerMode::NORMAL ? RecTriggerMode::SIGNAL : RecTriggerMode::NORMAL;
+	g_conf.recTriggerMode = g_conf.recTriggerMode == RecTriggerMode::NORMAL ? RecTriggerMode::SIGNAL : RecTriggerMode::NORMAL;
 }
 
 /* -------------------------------------------------------------------------- */
 
 void toggleFreeInputRec()
 {
-	if (!m::recManager::canEnableFreeInputRec())
+	if (!g_recorder.canEnableFreeInputRec())
 	{
-		m::conf::conf.inputRecMode = InputRecMode::RIGID;
+		g_conf.inputRecMode = InputRecMode::RIGID;
 		return;
 	}
-	m::conf::conf.inputRecMode = m::conf::conf.inputRecMode == InputRecMode::FREE ? InputRecMode::RIGID : InputRecMode::FREE;
+	g_conf.inputRecMode = g_conf.inputRecMode == InputRecMode::FREE ? InputRecMode::RIGID : InputRecMode::FREE;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -241,6 +252,6 @@ void closeProject()
 	if (!v::gdConfirmWin("Warning", "Close project: are you sure?"))
 		return;
 	m::init::reset();
-	m::mixer::enable();
+	g_mixer.enable();
 }
 } // namespace giada::c::main

@@ -44,11 +44,12 @@
 #include <string>
 
 extern giada::v::gdMainWindow* G_MainWin;
+extern giada::m::conf::Data    g_conf;
 
 namespace giada::v
 {
 gdPluginList::gdPluginList(ID channelId)
-: gdWindow(m::conf::conf.pluginListX, m::conf::conf.pluginListY, 468, 204)
+: gdWindow(g_conf.pluginListX, g_conf.pluginListY, 468, 204)
 , m_channelId(channelId)
 {
 	end();
@@ -70,8 +71,8 @@ gdPluginList::gdPluginList(ID channelId)
 
 gdPluginList::~gdPluginList()
 {
-	m::conf::conf.pluginListX = x();
-	m::conf::conf.pluginListY = y();
+	g_conf.pluginListX = x();
+	g_conf.pluginListY = y();
 }
 
 /* -------------------------------------------------------------------------- */
@@ -84,9 +85,9 @@ void gdPluginList::rebuild()
 {
 	m_plugins = c::plugin::getPlugins(m_channelId);
 
-	if (m_plugins.channelId == m::mixer::MASTER_OUT_CHANNEL_ID)
+	if (m_plugins.channelId == m::Mixer::MASTER_OUT_CHANNEL_ID)
 		label("Master Out Plug-ins");
-	else if (m_plugins.channelId == m::mixer::MASTER_IN_CHANNEL_ID)
+	else if (m_plugins.channelId == m::Mixer::MASTER_IN_CHANNEL_ID)
 		label("Master In Plug-ins");
 	else
 	{
@@ -111,10 +112,10 @@ void gdPluginList::rebuild()
 
 void gdPluginList::cb_addPlugin()
 {
-	int wx = m::conf::conf.pluginChooserX;
-	int wy = m::conf::conf.pluginChooserY;
-	int ww = m::conf::conf.pluginChooserW;
-	int wh = m::conf::conf.pluginChooserH;
+	int wx = g_conf.pluginChooserX;
+	int wy = g_conf.pluginChooserY;
+	int ww = g_conf.pluginChooserW;
+	int wh = g_conf.pluginChooserH;
 	u::gui::openSubWindow(G_MainWin, new v::gdPluginChooser(wx, wy, ww, wh, m_plugins.channelId), WID_FX_CHOOSER);
 }
 

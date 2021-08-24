@@ -37,16 +37,18 @@ namespace giada::m::channel
 {
 struct Data;
 }
+
 namespace giada::m::patch
 {
 struct Channel;
 }
+
 namespace giada::m::samplePlayer
 {
 struct Data
 {
 	Data(Resampler* r);
-	Data(const patch::Channel& p, float samplerateRatio, Resampler* r);
+	Data(const patch::Channel& p, float samplerateRatio, Resampler* r, Wave* w);
 	Data(const Data& o) = default;
 	Data(Data&& o)      = default;
 	Data& operator=(const Data&) = default;
@@ -69,8 +71,8 @@ struct Data
 	WaveReader       waveReader;
 };
 
-void react(channel::Data& ch, const eventDispatcher::Event& e);
-void advance(const channel::Data& ch, const sequencer::Event& e);
+void react(channel::Data& ch, const EventDispatcher::Event& e);
+void advance(const channel::Data& ch, const Sequencer::Event& e);
 void render(const channel::Data& ch);
 
 /* loadWave

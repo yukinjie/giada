@@ -31,9 +31,7 @@
 
 class geCheck;
 
-namespace giada
-{
-namespace v
+namespace giada::v
 {
 class geChoice;
 class geTabMidi : public Fl_Group
@@ -49,7 +47,7 @@ public:
 	geChoice* midiMap;
 	geChoice* sync;
 
-  private:
+private:
 	void fetchSystems();
 	void fetchOutPorts();
 	void fetchInPorts();
@@ -60,7 +58,6 @@ public:
 
 	int systemInitValue;
 };
-} // namespace v
-} // namespace giada
+} // namespace giada::v
 
 #endif

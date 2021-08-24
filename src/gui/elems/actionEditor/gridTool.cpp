@@ -25,12 +25,15 @@
 * --------------------------------------------------------------------------- */
 
 #include "gridTool.h"
-#include "core/clock.h"
+#include "core/sequencer.h"
 #include "core/conf.h"
 #include "gui/elems/basics/check.h"
 #include "gui/elems/basics/choice.h"
 #include "utils/math.h"
 #include <FL/Fl_Double_Window.H>
+
+extern giada::m::Sequencer  g_sequencer;
+extern giada::m::conf::Data g_conf;
 
 namespace giada::v
 {
@@ -51,8 +54,8 @@ geGridTool::geGridTool(Pixel x, Pixel y)
 
 	active = new geCheck(gridType->x() + gridType->w() + 4, y, 20, 20);
 
-	gridType->value(m::conf::conf.actionEditorGridVal);
-	active->value(m::conf::conf.actionEditorGridOn);
+	gridType->value(g_conf.actionEditorGridVal);
+	active->value(g_conf.actionEditorGridOn);
 
 	end();
 
@@ -64,8 +67,8 @@ geGridTool::geGridTool(Pixel x, Pixel y)
 
 geGridTool::~geGridTool()
 {
-	m::conf::conf.actionEditorGridVal = gridType->value();
-	m::conf::conf.actionEditorGridOn  = active->value();
+	g_conf.actionEditorGridVal = gridType->value();
+	g_conf.actionEditorGridOn  = active->value();
 }
 
 /* -------------------------------------------------------------------------- */
@@ -125,6 +128,6 @@ Frame geGridTool::getSnapFrame(Frame v) const
 
 Frame geGridTool::getCellSize() const
 {
-	return m::clock::getFramesInBeat() / getValue();
+	return g_sequencer.getFramesInBeat() / getValue();
 }
 } // namespace giada::v

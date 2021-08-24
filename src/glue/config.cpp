@@ -30,13 +30,16 @@
 #include "core/kernelAudio.h"
 #include "deps/rtaudio/RtAudio.h"
 
+extern giada::m::KernelAudio g_kernelAudio;
+extern giada::m::conf::Data  g_conf;
+
 namespace giada::c::config
 {
 namespace
 {
 AudioDeviceData getAudioDeviceData_(DeviceType type, size_t index, int channelsCount, int channelsStart)
 {
-	for (const m::kernelAudio::Device& device : m::kernelAudio::getDevices())
+	for (const m::KernelAudio::Device& device : g_kernelAudio.getDevices())
 		if (device.index == index)
 			return AudioDeviceData(type, device, channelsCount, channelsStart);
 	return AudioDeviceData();
@@ -47,7 +50,7 @@ AudioDeviceData getAudioDeviceData_(DeviceType type, size_t index, int channelsC
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-AudioDeviceData::AudioDeviceData(DeviceType type, const m::kernelAudio::Device& device,
+AudioDeviceData::AudioDeviceData(DeviceType type, const m::KernelAudio::Device& device,
     int channelsCount, int channelsStart)
 : type(type)
 , index(device.index)
@@ -100,39 +103,39 @@ AudioData getAudioData()
 
 #if defined(G_OS_LINUX)
 
-	if (m::kernelAudio::hasAPI(RtAudio::LINUX_ALSA))
+	if (g_kernelAudio.hasAPI(RtAudio::LINUX_ALSA))
 		audioData.apis[G_SYS_API_ALSA] = "ALSA";
-	if (m::kernelAudio::hasAPI(RtAudio::UNIX_JACK))
+	if (g_kernelAudio.hasAPI(RtAudio::UNIX_JACK))
 		audioData.apis[G_SYS_API_JACK] = "Jack";
-	if (m::kernelAudio::hasAPI(RtAudio::LINUX_PULSE))
+	if (g_kernelAudio.hasAPI(RtAudio::LINUX_PULSE))
 		audioData.apis[G_SYS_API_PULSE] = "PulseAudio";
 
 #elif defined(G_OS_FREEBSD)
 
-	if (m::kernelAudio::hasAPI(RtAudio::UNIX_JACK))
+	if (g_kernelAudio.hasAPI(RtAudio::UNIX_JACK))
 		audioData.apis[G_SYS_API_JACK] = "Jack";
-	if (m::kernelAudio::hasAPI(RtAudio::LINUX_PULSE))
+	if (g_kernelAudio.hasAPI(RtAudio::LINUX_PULSE))
 		audioData.apis[G_SYS_API_PULSE] = "PulseAudio";
 
 #elif defined(G_OS_WINDOWS)
 
-	if (m::kernelAudio::hasAPI(RtAudio::WINDOWS_DS))
+	if (g_kernelAudio.hasAPI(RtAudio::WINDOWS_DS))
 		audioData.apis[G_SYS_API_DS] = "DirectSound";
-	if (m::kernelAudio::hasAPI(RtAudio::WINDOWS_ASIO))
+	if (g_kernelAudio.hasAPI(RtAudio::WINDOWS_ASIO))
 		audioData.apis[G_SYS_API_ASIO] = "ASIO";
-	if (m::kernelAudio::hasAPI(RtAudio::WINDOWS_WASAPI))
+	if (g_kernelAudio.hasAPI(RtAudio::WINDOWS_WASAPI))
 		audioData.apis[G_SYS_API_WASAPI] = "WASAPI";
 
 #elif defined(G_OS_MAC)
 
-	if (m::kernelAudio::hasAPI(RtAudio::MACOSX_CORE))
+	if (g_kernelAudio.hasAPI(RtAudio::MACOSX_CORE))
 		audioData.apis[G_SYS_API_CORE] = "CoreAudio";
 
 #endif
 
-	std::vector<m::kernelAudio::Device> devices = m::kernelAudio::getDevices();
+	std::vector<m::KernelAudio::Device> devices = g_kernelAudio.getDevices();
 
-	for (const m::kernelAudio::Device& device : devices)
+	for (const m::KernelAudio::Device& device : devices)
 	{
 		if (device.maxOutputChannels > 0)
 			audioData.outputDevices.push_back(AudioDeviceData(DeviceType::OUTPUT, device, G_MAX_IO_CHANS, 0));
@@ -140,18 +143,18 @@ AudioData getAudioData()
 			audioData.inputDevices.push_back(AudioDeviceData(DeviceType::INPUT, device, 1, 0));
 	}
 
-	audioData.api             = m::conf::conf.soundSystem;
-	audioData.bufferSize      = m::conf::conf.buffersize;
-	audioData.sampleRate      = m::conf::conf.samplerate;
-	audioData.limitOutput     = m::conf::conf.limitOutput;
-	audioData.recTriggerLevel = m::conf::conf.recTriggerLevel;
-	audioData.resampleQuality = m::conf::conf.rsmpQuality;
+	audioData.api             = g_conf.soundSystem;
+	audioData.bufferSize      = g_conf.buffersize;
+	audioData.sampleRate      = g_conf.samplerate;
+	audioData.limitOutput     = g_conf.limitOutput;
+	audioData.recTriggerLevel = g_conf.recTriggerLevel;
+	audioData.resampleQuality = g_conf.rsmpQuality;
 	audioData.outputDevice    = getAudioDeviceData_(DeviceType::OUTPUT,
-        m::conf::conf.soundDeviceOut, m::conf::conf.channelsOutCount,
-        m::conf::conf.channelsOutStart);
+        g_conf.soundDeviceOut, g_conf.channelsOutCount,
+        g_conf.channelsOutStart);
 	audioData.inputDevice     = getAudioDeviceData_(DeviceType::INPUT,
-        m::conf::conf.soundDeviceIn, m::conf::conf.channelsInCount,
-        m::conf::conf.channelsInStart);
+        g_conf.soundDeviceIn, g_conf.channelsInCount,
+        g_conf.channelsInStart);
 
 	return audioData;
 }
@@ -160,17 +163,17 @@ AudioData getAudioData()
 
 void save(const AudioData& data)
 {
-	m::conf::conf.soundSystem      = data.api;
-	m::conf::conf.soundDeviceOut   = data.outputDevice.index;
-	m::conf::conf.soundDeviceIn    = data.inputDevice.index;
-	m::conf::conf.channelsOutCount = data.outputDevice.channelsCount;
-	m::conf::conf.channelsOutStart = data.outputDevice.channelsStart;
-	m::conf::conf.channelsInCount  = data.inputDevice.channelsCount;
-	m::conf::conf.channelsInStart  = data.inputDevice.channelsStart;
-	m::conf::conf.limitOutput      = data.limitOutput;
-	m::conf::conf.rsmpQuality      = data.resampleQuality;
-	m::conf::conf.buffersize       = data.bufferSize;
-	m::conf::conf.recTriggerLevel  = data.recTriggerLevel;
-	m::conf::conf.samplerate       = data.sampleRate;
+	g_conf.soundSystem      = data.api;
+	g_conf.soundDeviceOut   = data.outputDevice.index;
+	g_conf.soundDeviceIn    = data.inputDevice.index;
+	g_conf.channelsOutCount = data.outputDevice.channelsCount;
+	g_conf.channelsOutStart = data.outputDevice.channelsStart;
+	g_conf.channelsInCount  = data.inputDevice.channelsCount;
+	g_conf.channelsInStart  = data.inputDevice.channelsStart;
+	g_conf.limitOutput      = data.limitOutput;
+	g_conf.rsmpQuality      = data.resampleQuality;
+	g_conf.buffersize       = data.bufferSize;
+	g_conf.recTriggerLevel  = data.recTriggerLevel;
+	g_conf.samplerate       = data.sampleRate;
 }
 } // namespace giada::c::config

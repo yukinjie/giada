@@ -33,11 +33,7 @@
 #include <string>
 #include <vector>
 
-namespace giada
-{
-namespace m
-{
-namespace patch
+namespace giada::m::patch
 {
 struct Version
 {
@@ -131,7 +127,7 @@ struct Plugin
 };
 #endif
 
-struct Patch
+struct Data
 {
 	Version     version;
 	std::string name       = G_DEFAULT_PATCH_NAME;
@@ -154,26 +150,20 @@ struct Patch
 
 /* -------------------------------------------------------------------------- */
 
-extern Patch patch;
-
-/* -------------------------------------------------------------------------- */
-
-/* init
+/* reset
 Initializes the patch with default values. */
 
-void init();
+void reset(Data& patch);
 
 /* read
 Reads patch from file. It takes 'basePath' as parameter for Wave reading. */
 
-int read(const std::string& file, const std::string& basePath);
+int read(Data& patch, const std::string& file, const std::string& basePath);
 
 /* write
 Writes patch to file. */
 
-bool write(const std::string& file);
-} // namespace patch
-} // namespace m
-} // namespace giada
+bool write(const Data& patch, const std::string& file);
+} // namespace giada::m::patch
 
 #endif

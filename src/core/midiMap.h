@@ -24,17 +24,18 @@
  *
  * -------------------------------------------------------------------------- */
 
-#ifndef G_MIDIMAPCONF_H
-#define G_MIDIMAPCONF_H
+#ifndef G_MIDIMAP_H
+#define G_MIDIMAP_H
 
 #include <string>
 #include <vector>
 
-namespace giada
+namespace giada::m
 {
-namespace m
-{
-namespace midimap
+class KernelMidi;
+}
+
+namespace giada::m::midiMap
 {
 struct Message
 {
@@ -60,47 +61,51 @@ struct MidiMap
 	Message              playingInaudible;
 };
 
-/* -------------------------------------------------------------------------- */
+struct Data
+{
+	/* midimap
+	The actual MidiMap struct with data. */
 
-/* midimap
-The actual MidiMap struct with data. */
+	MidiMap midiMap;
 
-extern MidiMap midimap;
+	/* midimapsPath
+	Path to folder containing midimap files, different between OSes. */
 
-/* midimapsPath
-Path of midimap files, different between OSes. */
+	std::string midimapsPath;
 
-extern std::string midimapsPath;
+	/* maps
+	Maps are the available .giadamap files. Each element of the std::vector 
+	represents a .giadamap file found in the midimap folder. */
 
-/* maps
-Maps are the available .giadamap files. Each element of the std::vector 
-represents a .giadamap filename. */
-
-extern std::vector<std::string> maps;
+	std::vector<std::string> maps;
+};
 
 /* -------------------------------------------------------------------------- */
 
 /* init
-Parses the midi maps folders and find the available maps. */
+Parses the MIDI maps folders and find the available maps. */
 
-void init();
-
-/* setDefault
-Sets default values in case no maps are available/chosen. */
-
-void setDefault();
+void init(Data& midiMap);
 
 /* isDefined
-Checks whether a specific message has been defined within midi map file. */
+Checks whether a specific message has been defined within MIDI map file. */
 
 bool isDefined(const Message& msg);
 
 /* read
-Reads a midi map from file 'file'. */
+Reads a MIDI map from file 'file'. */
 
-int read(const std::string& file);
-} // namespace midimap
-} // namespace m
-} // namespace giada
+int read(Data& midiMap, const std::string& file);
+
+/* sendInitMessages
+Sends initialization messages to the connected MIDI devices. */
+
+void sendInitMessages(KernelMidi&, const Data& midiMap);
+
+/* sendMidiLightning
+Sends a MIDI lightning message defined by 'msg'. */
+
+void sendMidiLightning(KernelMidi&, uint32_t learnt, const midiMap::Message& msg);
+} // namespace giada::m::midiMap
 
 #endif

@@ -24,42 +24,38 @@
  *
  * -------------------------------------------------------------------------- */
 
-#ifndef G_REC_MANAGER_H
-#define G_REC_MANAGER_H
+#ifndef G_ACTION_H
+#define G_ACTION_H
 
-#include "core/types.h"
+#include "src/core/midiEvent.h"
+#include "src/core/types.h"
 
-namespace giada::m::recManager
+namespace giada::m
 {
-bool isRecording();
-bool isRecordingAction();
-bool isRecordingInput();
+struct Action
+{
+	ID        id = 0; // Invalid
+	ID        channelId;
+	Frame     frame;
+	MidiEvent event;
+	ID        pluginId    = -1;
+	int       pluginParam = -1;
+	ID        prevId      = 0;
+	ID        nextId      = 0;
 
-void startActionRec(RecTriggerMode);
-void stopActionRec();
-void toggleActionRec(RecTriggerMode);
+	const Action* prev = nullptr;
+	const Action* next = nullptr;
 
-bool startInputRec(RecTriggerMode, InputRecMode);
-void stopInputRec(InputRecMode);
-bool toggleInputRec(RecTriggerMode, InputRecMode);
+	bool isValid() const
+	{
+		return id != 0;
+	}
 
-/* canEnableRecOnSignal
-True if rec-on-signal can be enabled: can't set it while sequencer is running,
-in order to prevent mistakes while live recording. */
-
-bool canEnableRecOnSignal();
-
-/* canEnableFreeInputRec
-True if free loop-length can be enabled: Can't set it if there's already a 
-filled Sample Channel in the current project. */
-
-bool canEnableFreeInputRec();
-
-/* refreshInputRecMode
-Makes sure the input rec mode stays the right one when a new Sample Channel is
-filled with data. See canEnableFreeInputRec() rationale. */
-
-void refreshInputRecMode();
-} // namespace giada::m::recManager
+	bool isVolumeEnvelope() const
+	{
+		return event.getStatus() == MidiEvent::ENVELOPE && pluginId == -1;
+	}
+};
+} // namespace giada::m
 
 #endif

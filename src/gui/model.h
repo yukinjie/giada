@@ -29,12 +29,12 @@
 
 namespace giada::m::patch
 {
-struct Patch;
+struct Data;
 }
 namespace giada::v::model
 {
-void store(m::patch::Patch& patch);
-void load(const m::patch::Patch& patch);
+void store(m::patch::Data& patch);
+void load(const m::patch::Data& patch);
 } // namespace giada::v::model
 
 #endif

@@ -30,7 +30,6 @@
 #include "core/const.h"
 #include "core/graphics.h"
 #include "core/model/model.h"
-#include "core/recorder.h"
 #include "glue/channel.h"
 #include "glue/io.h"
 #include "glue/recorder.h"
@@ -48,16 +47,17 @@
 #include "gui/elems/basics/dial.h"
 #include "gui/elems/basics/statusButton.h"
 #include "midiChannelButton.h"
+#include "src/core/actions/actions.h"
 #include "utils/gui.h"
 #include "utils/string.h"
 #include <FL/Fl_Menu_Button.H>
 #include <cassert>
 
 extern giada::v::gdMainWindow* G_MainWin;
+extern giada::m::conf::Data    g_conf;
+extern giada::v::Dispatcher    g_viewDispatcher;
 
-namespace giada
-{
-namespace v
+namespace giada::v
 {
 namespace
 {
@@ -88,7 +88,7 @@ void menuCallback(Fl_Widget* w, void* v)
 	case Menu::__END_CLEAR_ACTION_SUBMENU__:
 		break;
 	case Menu::EDIT_ACTIONS:
-		u::gui::openSubWindow(G_MainWin, new v::gdMidiActionEditor(data.id, m::conf::conf), WID_ACTION_EDITOR);
+		u::gui::openSubWindow(G_MainWin, new v::gdMidiActionEditor(data.id, g_conf), WID_ACTION_EDITOR);
 		break;
 	case Menu::CLEAR_ACTIONS_ALL:
 		c::recorder::clearAllActions(data.id);
@@ -190,7 +190,7 @@ void geMidiChannel::cb_openMenu(Fl_Widget* /*w*/, void* p) { ((geMidiChannel*)p)
 
 void geMidiChannel::cb_playButton()
 {
-	v::dispatcher::dispatchTouch(*this, playButton->value());
+	g_viewDispatcher.dispatchTouch(*this, playButton->value());
 }
 
 /* -------------------------------------------------------------------------- */
@@ -247,6 +247,4 @@ void geMidiChannel::resize(int X, int Y, int W, int H)
 
 	packWidgets();
 }
-
-} // namespace v
-} // namespace giada
+} // namespace giada::v

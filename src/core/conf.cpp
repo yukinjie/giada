@@ -24,7 +24,7 @@
  *
  * -------------------------------------------------------------------------- */
 
-#include "conf.h"
+#include "core/conf.h"
 #include "core/const.h"
 #include "core/types.h"
 #include "deps/json/single_include/nlohmann/json.hpp"
@@ -46,7 +46,7 @@ std::string confDirPath_  = "";
 
 /* -------------------------------------------------------------------------- */
 
-void sanitize_()
+void sanitize_(Data& conf)
 {
 	conf.soundDeviceOut   = std::max(0, conf.soundDeviceOut);
 	conf.channelsOutCount = G_MAX_IO_CHANS;
@@ -93,13 +93,9 @@ int createConfigFolder_()
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-Conf conf;
-
-/* -------------------------------------------------------------------------- */
-
-void init()
+void init(Data& conf)
 {
-	conf = Conf();
+	conf = Data();
 
 	/* Initialize confFilePath_, i.e. the configuration file. In windows it is in
 	 * the same dir of the .exe, while in Linux and OS X in ~/.giada */
@@ -119,9 +115,9 @@ void init()
 
 /* -------------------------------------------------------------------------- */
 
-bool read()
+bool read(Data& conf)
 {
-	init();
+	init(conf);
 
 	std::ifstream ifs(confFilePath_);
 	if (!ifs.good())
@@ -210,14 +206,14 @@ bool read()
 	conf.pluginSortMethod = j.value(CONF_KEY_PLUGIN_SORT_METHOD, conf.pluginSortMethod);
 #endif
 
-	sanitize_();
+	sanitize_(conf);
 
 	return true;
 }
 
 /* -------------------------------------------------------------------------- */
 
-bool write()
+bool write(const Data& conf)
 {
 	if (!createConfigFolder_())
 		return false;

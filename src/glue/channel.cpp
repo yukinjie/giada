@@ -25,19 +25,22 @@
  * -------------------------------------------------------------------------- */
 
 #include "gui/elems/mainWindow/keyboard/channel.h"
-#include "channel.h"
-#include "core/clock.h"
+#include "core/actions/actionRecorder.h"
+#include "core/channels/channelManager.h"
 #include "core/conf.h"
 #include "core/kernelAudio.h"
 #include "core/mixer.h"
 #include "core/mixerHandler.h"
 #include "core/model/model.h"
+#include "core/patch.h"
 #include "core/plugins/plugin.h"
 #include "core/plugins/pluginHost.h"
-#include "core/recManager.h"
+#include "core/plugins/pluginManager.h"
 #include "core/recorder.h"
 #include "core/wave.h"
 #include "core/waveManager.h"
+#include "glue/channel.h"
+#include "glue/main.h"
 #include "gui/dialogs/mainWindow.h"
 #include "gui/dialogs/sampleEditor.h"
 #include "gui/dialogs/warnings.h"
@@ -53,7 +56,7 @@
 #include "gui/elems/sampleEditor/volumeTool.h"
 #include "gui/elems/sampleEditor/waveTools.h"
 #include "gui/elems/sampleEditor/waveform.h"
-#include "main.h"
+#include "src/core/actions/actions.h"
 #include "utils/fs.h"
 #include "utils/gui.h"
 #include "utils/log.h"
@@ -62,7 +65,18 @@
 #include <cmath>
 #include <functional>
 
-extern giada::v::gdMainWindow* G_MainWin;
+extern giada::v::gdMainWindow*  G_MainWin;
+extern giada::m::KernelAudio    g_kernelAudio;
+extern giada::m::model::Model   g_model;
+extern giada::m::PluginHost     g_pluginHost;
+extern giada::m::PluginManager  g_pluginManager;
+extern giada::m::MixerHandler   g_mixerHandler;
+extern giada::m::ActionRecorder g_actionRecorder;
+extern giada::m::Recorder       g_recorder;
+extern giada::m::ChannelManager g_channelManager;
+extern giada::m::conf::Data     g_conf;
+extern giada::m::patch::Data    g_patch;
+extern giada::m::WaveManager    g_waveManager;
 
 namespace giada::c::channel
 {
@@ -139,8 +153,8 @@ Data::Data(const m::channel::Data& c)
 ChannelStatus Data::getPlayStatus() const { return m_channel.state->playStatus.load(); }
 ChannelStatus Data::getRecStatus() const { return m_channel.state->recStatus.load(); }
 bool          Data::getReadActions() const { return m_channel.state->readActions.load(); }
-bool          Data::isRecordingInput() const { return m::recManager::isRecordingInput(); }
-bool          Data::isRecordingAction() const { return m::recManager::isRecordingAction(); }
+bool          Data::isRecordingInput() const { return g_recorder.isRecordingInput(); }
+bool          Data::isRecordingAction() const { return g_recorder.isRecordingAction(); }
 /* TODO - useless methods, turn them into member vars */
 bool Data::getSolo() const { return m_channel.solo; }
 bool Data::getMute() const { return m_channel.mute; }
@@ -152,13 +166,13 @@ bool Data::isArmed() const { return m_channel.armed; }
 
 Data getData(ID channelId)
 {
-	return Data(m::model::get().getChannel(channelId));
+	return Data(g_model.get().getChannel(channelId));
 }
 
 std::vector<Data> getChannels()
 {
 	std::vector<Data> out;
-	for (const m::channel::Data& ch : m::model::get().channels)
+	for (const m::channel::Data& ch : g_model.get().channels)
 		if (!ch.isInternal())
 			out.push_back(Data(ch));
 	return out;
@@ -168,43 +182,57 @@ std::vector<Data> getChannels()
 
 int loadChannel(ID channelId, const std::string& fname)
 {
+	m::WaveManager::Result res = g_waveManager.createFromFile(fname, /*id=*/0,
+	    g_conf.samplerate, g_conf.rsmpQuality);
+
+	if (res.status != G_RES_OK)
+	{
+		printLoadError_(res.status);
+		return res.status;
+	}
+
 	/* Save the patch and take the last browser's dir in order to re-use it the 
 	next time. */
 
-	m::conf::conf.samplePath = u::fs::dirname(fname);
+	g_conf.samplePath = u::fs::dirname(fname);
+	g_mixerHandler.loadChannel(channelId, std::move(res.wave));
 
-	int res = m::mh::loadChannel(channelId, fname);
-	if (res != G_RES_OK)
-		printLoadError_(res);
-
-	return res;
+	return G_RES_OK;
 }
 
 /* -------------------------------------------------------------------------- */
 
 void addChannel(ID columnId, ChannelType type)
 {
-	m::mh::addChannel(type, columnId);
+	g_mixerHandler.addChannel(type, columnId, g_kernelAudio.getRealBufSize(), g_channelManager);
 }
 
 /* -------------------------------------------------------------------------- */
 
-void addAndLoadChannel(ID columnId, const std::string& fpath)
+void addAndLoadChannel(ID columnId, const std::string& fname)
 {
-	int res = m::mh::addAndLoadChannel(columnId, fpath);
-	if (res != G_RES_OK)
-		printLoadError_(res);
+	m::WaveManager::Result res = g_waveManager.createFromFile(fname, /*id=*/0,
+	    g_conf.samplerate, g_conf.rsmpQuality);
+	if (res.status == G_RES_OK)
+		g_mixerHandler.addAndLoadChannel(columnId, std::move(res.wave), g_kernelAudio.getRealBufSize(),
+		    	g_channelManager);
+	else
+		printLoadError_(res.status);
 }
 
-void addAndLoadChannels(ID columnId, const std::vector<std::string>& fpaths)
+void addAndLoadChannels(ID columnId, const std::vector<std::string>& fnames)
 {
-	if (fpaths.size() == 1)
-		return addAndLoadChannel(columnId, fpaths[0]);
-
 	bool errors = false;
-	for (const std::string& f : fpaths)
-		if (m::mh::addAndLoadChannel(columnId, f) != G_RES_OK)
+	for (const std::string& f : fnames)
+	{
+		m::WaveManager::Result res = g_waveManager.createFromFile(f, /*id=*/0,
+		    g_conf.samplerate, g_conf.rsmpQuality);
+		if (res.status == G_RES_OK)
+			g_mixerHandler.addAndLoadChannel(columnId, std::move(res.wave), g_kernelAudio.getRealBufSize(),
+			    g_channelManager);
+		else
 			errors = true;
+	}
 
 	if (errors)
 		v::gdAlert("Some files weren't loaded successfully.");
@@ -217,8 +245,15 @@ void deleteChannel(ID channelId)
 	if (!v::gdConfirmWin("Warning", "Delete channel: are you sure?"))
 		return;
 	u::gui::closeAllSubwindows();
-	m::recorder::clearChannel(channelId);
-	m::mh::deleteChannel(channelId);
+
+#ifdef WITH_VST
+	const std::vector<m::Plugin*> plugins = g_model.get().getChannel(channelId).plugins;
+#endif
+	g_mixerHandler.deleteChannel(channelId);
+	g_actionRecorder.clearChannel(channelId);
+#ifdef WITH_VST
+	g_pluginHost.freePlugins(plugins);
+#endif
 }
 
 /* -------------------------------------------------------------------------- */
@@ -228,42 +263,44 @@ void freeChannel(ID channelId)
 	if (!v::gdConfirmWin("Warning", "Free channel: are you sure?"))
 		return;
 	u::gui::closeAllSubwindows();
-	m::recorder::clearChannel(channelId);
-	m::mh::freeChannel(channelId);
+	g_actionRecorder.clearChannel(channelId);
+	g_mixerHandler.freeChannel(channelId);
 }
 
 /* -------------------------------------------------------------------------- */
 
 void setInputMonitor(ID channelId, bool value)
 {
-	m::model::get().getChannel(channelId).audioReceiver->inputMonitor = value;
-	m::model::swap(m::model::SwapType::SOFT);
+	g_model.get().getChannel(channelId).audioReceiver->inputMonitor = value;
+	g_model.swap(m::model::SwapType::SOFT);
 }
 
 /* -------------------------------------------------------------------------- */
 
 void setOverdubProtection(ID channelId, bool value)
 {
-	m::channel::Data& ch                = m::model::get().getChannel(channelId);
+	m::channel::Data& ch                = g_model.get().getChannel(channelId);
 	ch.audioReceiver->overdubProtection = value;
 	if (value == true && ch.armed)
 		ch.armed = false;
-	m::model::swap(m::model::SwapType::SOFT);
+	g_model.swap(m::model::SwapType::SOFT);
 }
 
 /* -------------------------------------------------------------------------- */
 
 void cloneChannel(ID channelId)
 {
-	m::mh::cloneChannel(channelId);
+	g_actionRecorder.cloneActions(channelId, g_channelManager.getNextId());
+	g_mixerHandler.cloneChannel(channelId, g_patch.samplerate, g_kernelAudio.getRealBufSize(),
+	    g_channelManager, g_waveManager, g_pluginManager);
 }
 
 /* -------------------------------------------------------------------------- */
 
 void setSamplePlayerMode(ID channelId, SamplePlayerMode mode)
 {
-	m::model::get().getChannel(channelId).samplePlayer->mode = mode;
-	m::model::swap(m::model::SwapType::HARD); // TODO - SOFT should be enough, fix geChannel refresh method
+	g_model.get().getChannel(channelId).samplePlayer->mode = mode;
+	g_model.swap(m::model::SwapType::HARD); // TODO - SOFT should be enough, fix geChannel refresh method
 	u::gui::refreshActionEditor();
 }
 
@@ -271,14 +308,14 @@ void setSamplePlayerMode(ID channelId, SamplePlayerMode mode)
 
 void setHeight(ID channelId, Pixel p)
 {
-	m::model::get().getChannel(channelId).height = p;
-	m::model::swap(m::model::SwapType::SOFT);
+	g_model.get().getChannel(channelId).height = p;
+	g_model.swap(m::model::SwapType::SOFT);
 }
 
 /* -------------------------------------------------------------------------- */
 
 void setName(ID channelId, const std::string& name)
 {
-	m::mh::renameChannel(channelId, name);
+	g_mixerHandler.renameChannel(channelId, name);
 }
 } // namespace giada::c::channel

@@ -34,7 +34,7 @@
 
 namespace giada::m::conf
 {
-struct Conf
+struct Data
 {
 	int  logMode          = LOG_MODE_MUTE;
 	bool showTooltips     = true;
@@ -134,13 +134,9 @@ struct Conf
 
 /* -------------------------------------------------------------------------- */
 
-extern Conf conf;
-
-/* -------------------------------------------------------------------------- */
-
-void init();
-bool read();
-bool write();
+void init(Data& conf);
+bool read(Data& conf);
+bool write(const Data& conf);
 } // namespace giada::m::conf
 
 #endif

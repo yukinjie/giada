@@ -27,15 +27,12 @@
 #ifndef G_GLUE_CONFIG_H
 #define G_GLUE_CONFIG_H
 
+#include "core/kernelAudio.h"
 #include "core/types.h"
 #include <map>
 #include <string>
 #include <vector>
 
-namespace giada::m::kernelAudio
-{
-struct Device;
-}
 namespace giada::c::config
 {
 enum class DeviceType
@@ -47,7 +44,7 @@ enum class DeviceType
 struct AudioDeviceData
 {
 	AudioDeviceData() = default;
-	AudioDeviceData(DeviceType t, const m::kernelAudio::Device&, int channelsCount, int channelsStart);
+	AudioDeviceData(DeviceType t, const m::KernelAudio::Device&, int channelsCount, int channelsStart);
 
 	DeviceType       type        = DeviceType::OUTPUT;
 	int              index       = -1;

@@ -36,9 +36,9 @@
 #import "utils/cocoa.h" // objective-c
 #endif
 
-namespace giada
-{
-namespace v
+extern giada::m::PluginHost g_pluginHost;
+
+namespace giada::v
 {
 gdPluginWindowGUI::gdPluginWindowGUI(c::plugin::Plugin& p)
 #ifdef G_OS_MAC
@@ -124,7 +124,7 @@ void gdPluginWindowGUI::cb_close()
 
 void gdPluginWindowGUI::cb_refresh()
 {
-	m::pluginHost::runDispatchLoop();
+	g_pluginHost.runDispatchLoop();
 	Fl::repeat_timeout(G_GUI_PLUGIN_RATE, cb_refresh, (void*)this);
 }
 
@@ -149,7 +149,6 @@ void gdPluginWindowGUI::closeEditor()
 	delete m_ui;
 	m_ui = nullptr;
 }
-} // namespace v
-} // namespace giada
+} // namespace giada::v
 
 #endif // #ifdef WITH_VST

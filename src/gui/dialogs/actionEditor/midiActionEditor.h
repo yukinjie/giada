@@ -37,7 +37,7 @@ namespace giada::v
 class gdMidiActionEditor : public gdBaseActionEditor
 {
 public:
-	gdMidiActionEditor(ID channelId, m::conf::Conf& c);
+	gdMidiActionEditor(ID channelId, m::conf::Data& c);
 	~gdMidiActionEditor();
 
 	void rebuild() override;
