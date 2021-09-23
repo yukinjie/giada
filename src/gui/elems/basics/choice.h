@@ -43,7 +43,11 @@ public:
 
 	ID getSelectedId() const;
 
+	/* addItem
+	Adds a new item with a certain ID. Pass id = -1 to auto-increment it. */
+
 	void addItem(const std::string& label, ID id);
+
 	void showItem(const std::string& label);
 	void showItem(ID id);
 	void clear();

@@ -28,8 +28,6 @@
 
 #include "pluginChooser.h"
 #include "core/conf.h"
-#include "core/plugins/pluginHost.h"
-#include "core/plugins/pluginManager.h"
 #include "glue/plugin.h"
 #include "gui/elems/basics/box.h"
 #include "gui/elems/basics/button.h"
@@ -37,13 +35,11 @@
 #include "gui/elems/plugin/pluginBrowser.h"
 #include "utils/gui.h"
 
-extern giada::m::conf::Data    g_conf;
-extern giada::m::PluginManager g_pluginManager;
-
 namespace giada::v
 {
-gdPluginChooser::gdPluginChooser(int X, int Y, int W, int H, ID channelId)
+gdPluginChooser::gdPluginChooser(int X, int Y, int W, int H, ID channelId, m::conf::Data& c)
 : gdWindow(X, Y, W, H, "Available plugins")
+, m_conf(c)
 , m_channelId(channelId)
 {
 	/* top area */
@@ -70,7 +66,7 @@ gdPluginChooser::gdPluginChooser(int X, int Y, int W, int H, ID channelId)
 	sortMethod->add("Category");
 	sortMethod->add("Manufacturer");
 	sortMethod->callback(cb_sort, (void*)this);
-	sortMethod->value(g_conf.pluginSortMethod);
+	sortMethod->value(m_conf.pluginSortMethod);
 
 	addBtn->callback(cb_add, (void*)this);
 	addBtn->shortcut(FL_Enter);
@@ -85,11 +81,11 @@ gdPluginChooser::gdPluginChooser(int X, int Y, int W, int H, ID channelId)
 
 gdPluginChooser::~gdPluginChooser()
 {
-	g_conf.pluginChooserX   = x();
-	g_conf.pluginChooserY   = y();
-	g_conf.pluginChooserW   = w();
-	g_conf.pluginChooserH   = h();
-	g_conf.pluginSortMethod = sortMethod->value();
+	m_conf.pluginChooserX   = x();
+	m_conf.pluginChooserY   = y();
+	m_conf.pluginChooserW   = w();
+	m_conf.pluginChooserH   = h();
+	m_conf.pluginSortMethod = sortMethod->value();
 }
 
 /* -------------------------------------------------------------------------- */
@@ -109,7 +105,7 @@ void gdPluginChooser::cb_close()
 
 void gdPluginChooser::cb_sort()
 {
-	g_pluginManager.sortPlugins(static_cast<m::PluginManager::SortMethod>(sortMethod->value()));
+	c::plugin::sortPlugins(static_cast<m::PluginManager::SortMethod>(sortMethod->value()));
 	browser->refresh();
 }
 

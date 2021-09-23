@@ -90,6 +90,11 @@ public:
 
 	EventDispatcher();
 
+	/* start
+	Starts the internal worker on a separate thread. Call this on startup. */
+
+	void start();
+
 	void pumpUIevent(Event e);
 	void pumpMidiEvent(Event e);
 

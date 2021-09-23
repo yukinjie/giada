@@ -40,6 +40,7 @@
 #include "gui/dialogs/pluginList.h"
 #include "gui/dialogs/pluginWindow.h"
 #include "gui/dialogs/warnings.h"
+#include "gui/elems/config/tabPlugins.h"
 #include "plugin.h"
 #include "utils/gui.h"
 #include <FL/Fl.H>
@@ -133,6 +134,11 @@ Param getParam(int index, const m::Plugin& plugin, ID channelId)
 	return Param(plugin, index, channelId);
 }
 
+std::vector<m::PluginManager::PluginInfo> getPluginsInfo()
+{
+	return g_pluginManager.getPluginsInfo();
+}
+
 /* -------------------------------------------------------------------------- */
 
 void updateWindow(ID pluginId, bool gui)
@@ -189,6 +195,13 @@ void swapPlugins(const m::Plugin& p1, const m::Plugin& p2, ID channelId)
 
 /* -------------------------------------------------------------------------- */
 
+void sortPlugins(m::PluginManager::SortMethod method)
+{
+	g_pluginManager.sortPlugins(method);
+}
+
+/* -------------------------------------------------------------------------- */
+
 void freePlugin(const m::Plugin& plugin, ID channelId)
 {
 	u::vector::remove(g_model.get().getChannel(channelId).plugins, &plugin);
@@ -214,6 +227,13 @@ void toggleBypass(ID pluginId)
 
 /* -------------------------------------------------------------------------- */
 
+void runDispatchLoop()
+{
+	g_pluginHost.runDispatchLoop();
+}
+
+/* -------------------------------------------------------------------------- */
+
 void setPluginPathCb(void* data)
 {
 	v::gdBrowserDir* browser = (v::gdBrowserDir*)data;
@@ -231,7 +251,7 @@ void setPluginPathCb(void* data)
 	browser->do_callback();
 
 	v::gdConfig* configWin = static_cast<v::gdConfig*>(u::gui::getSubwindow(G_MainWin, WID_CONFIG));
-	configWin->refreshVstPath();
+	configWin->tabPlugins->refreshVstPath(g_conf.pluginPath);
 }
 } // namespace giada::c::plugin
 

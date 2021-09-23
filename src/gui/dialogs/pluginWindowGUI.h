@@ -61,7 +61,7 @@ private:
 
 	c::plugin::Plugin& m_plugin;
 
-	juce::AudioProcessorEditor* m_ui;
+	juce::AudioProcessorEditor* m_ui; // TODO - make it unique_ptr
 };
 } // namespace giada::v
 

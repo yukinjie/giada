@@ -37,9 +37,12 @@
 class geButton;
 class geButton;
 
-namespace giada
+namespace giada::m::conf
 {
-namespace v
+struct Data;
+}
+
+namespace giada::v
 {
 class geChoice;
 class gePluginBrowser;
@@ -47,16 +50,18 @@ class gePluginBrowser;
 class gdPluginChooser : public gdWindow
 {
 public:
-	gdPluginChooser(int x, int y, int w, int h, ID channelId);
+	gdPluginChooser(int x, int y, int w, int h, ID channelId, m::conf::Data&);
 	~gdPluginChooser();
 
-  private:
+private:
 	static void cb_close(Fl_Widget* /*w*/, void* p);
 	static void cb_add(Fl_Widget* /*w*/, void* p);
 	static void cb_sort(Fl_Widget* /*w*/, void* p);
 	void        cb_close();
 	void        cb_add();
 	void        cb_sort();
+
+	m::conf::Data& m_conf;
 
 	geChoice*        sortMethod;
 	geButton*        addBtn;
@@ -65,8 +70,7 @@ public:
 
 	ID m_channelId;
 };
-} // namespace v
-} // namespace giada
+} // namespace giada::v
 
 #endif
 

@@ -33,11 +33,13 @@ namespace giada::m::channel
 {
 struct Data;
 }
+
 namespace giada::m::model
 {
 struct Sequencer;
 struct Mixer;
 } // namespace giada::m::model
+
 namespace giada::c::main
 {
 struct Timer
@@ -82,12 +84,30 @@ struct Sequencer
 	Frame recMaxLength;
 };
 
+struct Transport
+{
+	bool           isRunning;
+	bool           isRecordingAction;
+	bool           isRecordingInput;
+	bool           isMetronomeOn;
+	RecTriggerMode recTriggerMode;
+	InputRecMode   inputRecMode;
+};
+
+struct MainMenu
+{
+	bool hasAudioData;
+	bool hasActions;
+};
+
 /* get*
 Returns viewModel objects filled with data. */
 
 Timer     getTimer();
 IO        getIO();
 Sequencer getSequencer();
+Transport getTransport();
+MainMenu  getMainMenu();
 
 /* setBpm (1)
 Sets bpm value from string to float. */
@@ -111,11 +131,14 @@ void setInToOut(bool v);
 
 void toggleRecOnSignal();
 void toggleFreeInputRec();
+void printDebugInfo();
 
 /* closeProject
 Resets Giada to init state. If resetGui also refresh all widgets. */
 
 void closeProject();
+
+void quitGiada();
 } // namespace giada::c::main
 
 #endif

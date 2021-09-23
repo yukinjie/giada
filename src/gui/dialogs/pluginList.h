@@ -34,6 +34,11 @@
 
 class geButton;
 
+namespace giada::m::conf
+{
+struct Data;
+}
+
 namespace giada::v
 {
 class geLiquidScroll;
@@ -41,7 +46,7 @@ class gePluginElement;
 class gdPluginList : public gdWindow
 {
 public:
-	gdPluginList(ID channelId);
+	gdPluginList(ID channelId, m::conf::Data&);
 	~gdPluginList();
 
 	void rebuild() override;
@@ -52,6 +57,8 @@ public:
 private:
 	static void cb_addPlugin(Fl_Widget* /*w*/, void* p);
 	void        cb_addPlugin();
+
+	m::conf::Data& m_conf;
 
 	geButton*       addPlugin;
 	geLiquidScroll* list;

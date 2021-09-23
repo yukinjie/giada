@@ -31,25 +31,29 @@
 #include "gui/elems/basics/pack.h"
 #include <FL/Fl_Group.H>
 
-namespace giada
+namespace giada::m::conf
 {
-namespace v
+struct Data;
+}
+
+namespace giada::v
 {
 class geTabBehaviors : public Fl_Group
 {
 public:
-	geTabBehaviors(int x, int y, int w, int h);
+	geTabBehaviors(int x, int y, int w, int h, m::conf::Data&);
 
 	void save();
 
-  private:
+private:
 	gePack  m_container;
 	geCheck m_chansStopOnSeqHalt;
 	geCheck m_treatRecsAsLoops;
 	geCheck m_inputMonitorDefaultOn;
 	geCheck m_overdubProtectionDefaultOn;
+
+	m::conf::Data& m_conf;
 };
-} // namespace v
-} // namespace giada
+} // namespace giada::v
 
 #endif

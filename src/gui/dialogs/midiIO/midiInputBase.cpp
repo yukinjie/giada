@@ -28,12 +28,12 @@
 #include "core/conf.h"
 #include "glue/io.h"
 
-extern giada::m::conf::Data g_conf;
-
 namespace giada::v
 {
-gdMidiInputBase::gdMidiInputBase(int x, int y, int w, int h, const char* title)
+gdMidiInputBase::gdMidiInputBase(int x, int y, int w, int h, const char* title,
+    m::conf::Data& c)
 : gdWindow(x, y, w, h, title)
+, m_conf(c)
 {
 }
 
@@ -43,10 +43,10 @@ gdMidiInputBase::~gdMidiInputBase()
 {
 	c::io::stopMidiLearn();
 
-	g_conf.midiInputX = x();
-	g_conf.midiInputY = y();
-	g_conf.midiInputW = w();
-	g_conf.midiInputH = h();
+	m_conf.midiInputX = x();
+	m_conf.midiInputY = y();
+	m_conf.midiInputW = w();
+	m_conf.midiInputH = h();
 }
 
 /* -------------------------------------------------------------------------- */

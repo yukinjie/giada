@@ -32,12 +32,12 @@
 #elif defined(__linux__) || defined(__FreeBSD__)
 #include <X11/xpm.h>
 #endif
-#include "core/sequencer.h"
 #include "core/conf.h"
 #include "core/graphics.h"
 #include "core/mixer.h"
 #include "core/mixerHandler.h"
 #include "core/plugins/pluginHost.h"
+#include "core/sequencer.h"
 #include "gui.h"
 #include "gui/dialogs/actionEditor/baseActionEditor.h"
 #include "gui/dialogs/mainWindow.h"
@@ -55,8 +55,6 @@
 #include "string.h"
 
 extern giada::v::gdMainWindow* G_MainWin;
-extern giada::m::Sequencer     g_sequencer;
-extern giada::m::MixerHandler  g_mixerHandler;
 
 namespace giada::u::gui
 {
@@ -123,21 +121,13 @@ bool shouldBlink()
 
 /* -------------------------------------------------------------------------- */
 
-void updateStaticWidgets()
+void updateStaticWidgets(const m::Sequencer& sequencer, const m::MixerHandler& mixerHandler)
 {
-	G_MainWin->mainIO->setOutVol(g_mixerHandler.getOutVol());
-	G_MainWin->mainIO->setInVol(g_mixerHandler.getInVol());
-
-#ifdef WITH_VST
-
-	//	G_MainWin->mainIO->setMasterFxOutFull(pluginHost::getStack(pluginHost::StackType::MASTER_OUT).plugins.size() > 0);
-	//	G_MainWin->mainIO->setMasterFxInFull(pluginHost::getStack(pluginHost::StackType::MASTER_IN).plugins.size() > 0);
-
-#endif
-
-	G_MainWin->mainTimer->setMeter(g_sequencer.getBeats(), g_sequencer.getBars());
-	G_MainWin->mainTimer->setBpm(g_sequencer.getBpm());
-	G_MainWin->mainTimer->setQuantizer(g_sequencer.getQuantizerValue());
+	G_MainWin->mainIO->setOutVol(mixerHandler.getOutVol());
+	G_MainWin->mainIO->setInVol(mixerHandler.getInVol());
+	G_MainWin->mainTimer->setMeter(sequencer.getBeats(), sequencer.getBars());
+	G_MainWin->mainTimer->setBpm(sequencer.getBpm());
+	G_MainWin->mainTimer->setQuantizer(sequencer.getQuantizerValue());
 }
 
 /* -------------------------------------------------------------------------- */

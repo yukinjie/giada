@@ -25,33 +25,14 @@
  * -------------------------------------------------------------------------- */
 
 #include "mainMenu.h"
-#include "core/conf.h"
 #include "core/const.h"
-#include "core/mixer.h"
-#include "core/mixerHandler.h"
-#include "core/model/model.h"
 #include "core/patch.h"
+#include "glue/layout.h"
 #include "glue/main.h"
-#include "glue/storage.h"
-#include "gui/dialogs/about.h"
-#include "gui/dialogs/browser/browserLoad.h"
-#include "gui/dialogs/browser/browserSave.h"
-#include "gui/dialogs/config.h"
-#include "gui/dialogs/mainWindow.h"
-#include "gui/dialogs/midiIO/midiInputMaster.h"
-#include "gui/dialogs/warnings.h"
 #include "gui/elems/basics/boxtypes.h"
 #include "gui/elems/basics/button.h"
 #include "keyboard/keyboard.h"
-#include "utils/gui.h"
 #include <FL/Fl_Menu_Button.H>
-#include <cassert>
-
-extern giada::v::gdMainWindow* G_MainWin;
-extern giada::m::model::Model  g_model;
-extern giada::m::MixerHandler  g_mixerHandler;
-extern giada::m::conf::Data    g_conf;
-extern giada::m::patch::Data   g_patch;
 
 namespace giada::v
 {
@@ -73,10 +54,10 @@ geMainMenu::geMainMenu(int x, int y)
 	edit->callback(cb_edit, (void*)this);
 
 	about->callback([](Fl_Widget* /*w*/, void* /*v*/) {
-		u::gui::openSubWindow(G_MainWin, new gdAbout(), WID_ABOUT);
+		c::layout::openAboutWindow();
 	});
 	config->callback([](Fl_Widget* /*w*/, void* /*v*/) {
-		u::gui::openSubWindow(G_MainWin, new gdConfig(400, 370), WID_CONFIG);
+		c::layout::openConfigWindow();
 	});
 }
 
@@ -115,15 +96,11 @@ void geMainMenu::cb_file()
 
 	if (strcmp(m->label(), "Open project...") == 0)
 	{
-		gdWindow* childWin = new gdBrowserLoad("Open project",
-		    g_conf.patchPath, c::storage::loadProject, 0);
-		u::gui::openSubWindow(G_MainWin, childWin, WID_FILE_BROWSER);
+		c::layout::openBrowserForProjectLoad();
 	}
 	else if (strcmp(m->label(), "Save project...") == 0)
 	{
-		gdWindow* childWin = new gdBrowserSave("Save project", g_conf.patchPath,
-		    g_patch.name, c::storage::saveProject, 0);
-		u::gui::openSubWindow(G_MainWin, childWin, WID_FILE_BROWSER);
+		c::layout::openBrowserForProjectSave();
 	}
 	else if (strcmp(m->label(), "Close project") == 0)
 	{
@@ -132,12 +109,12 @@ void geMainMenu::cb_file()
 #ifndef NDEBUG
 	else if (strcmp(m->label(), "Debug stats") == 0)
 	{
-		g_model.debug();
+		c::main::printDebugInfo();
 	}
 #endif
 	else if (strcmp(m->label(), "Quit Giada") == 0)
 	{
-		G_MainWin->do_callback();
+		c::main::quitGiada();
 	}
 }
 
@@ -145,19 +122,21 @@ void geMainMenu::cb_file()
 
 void geMainMenu::cb_edit()
 {
-	Fl_Menu_Item menu[] = {
+	c::main::MainMenu menu = c::main::getMainMenu();
+
+	Fl_Menu_Item menuItem[] = {
 	    {"Free all Sample channels"},
 	    {"Clear all actions"},
 	    {"Setup global MIDI input..."},
 	    {0}};
 
-	menu[0].deactivate();
-	menu[1].deactivate();
+	menuItem[0].deactivate();
+	menuItem[1].deactivate();
 
-	if (g_mixerHandler.hasAudioData())
-		menu[0].activate();
-	if (g_mixerHandler.hasActions())
-		menu[1].activate();
+	if (menu.hasAudioData)
+		menuItem[0].activate();
+	if (menu.hasActions)
+		menuItem[1].activate();
 
 	Fl_Menu_Button b(0, 0, 100, 50);
 	b.box(G_CUSTOM_BORDER_BOX);
@@ -165,7 +144,7 @@ void geMainMenu::cb_edit()
 	b.textcolor(G_COLOR_LIGHT_2);
 	b.color(G_COLOR_GREY_2);
 
-	const Fl_Menu_Item* m = menu->popup(Fl::event_x(), Fl::event_y(), 0, 0, &b);
+	const Fl_Menu_Item* m = menuItem->popup(Fl::event_x(), Fl::event_y(), 0, 0, &b);
 	if (!m)
 		return;
 
@@ -174,6 +153,6 @@ void geMainMenu::cb_edit()
 	else if (strcmp(m->label(), "Clear all actions") == 0)
 		c::main::clearAllActions();
 	else if (strcmp(m->label(), "Setup global MIDI input...") == 0)
-		u::gui::openSubWindow(G_MainWin, new gdMidiInputMaster(), WID_MIDI_INPUT);
+		c::layout::openMasterMidiInputWindow();
 }
 } // namespace giada::v

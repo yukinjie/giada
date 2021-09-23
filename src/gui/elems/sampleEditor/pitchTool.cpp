@@ -26,7 +26,6 @@
  * -------------------------------------------------------------------------- */
 
 #include "pitchTool.h"
-#include "core/sequencer.h"
 #include "core/const.h"
 #include "core/graphics.h"
 #include "core/model/model.h"
@@ -40,11 +39,7 @@
 #include "utils/string.h"
 #include <FL/Fl.H>
 
-extern giada::m::Sequencer g_sequencer;
-
-namespace giada
-{
-namespace v
+namespace giada::v
 {
 gePitchTool::gePitchTool(const c::sampleEditor::Data& d, int x, int y)
 : gePack(x, y, Direction::HORIZONTAL)
@@ -143,7 +138,7 @@ void gePitchTool::cb_setPitchDouble()
 
 void gePitchTool::cb_setPitchToBar()
 {
-	c::events::setChannelPitch(m_data->channelId, m_data->end / (float)g_sequencer.getFramesInBar(),
+	c::events::setChannelPitch(m_data->channelId, m_data->end / (float)m_data->getFramesInBar(),
 	    Thread::MAIN);
 }
 
@@ -151,7 +146,7 @@ void gePitchTool::cb_setPitchToBar()
 
 void gePitchTool::cb_setPitchToSong()
 {
-	c::events::setChannelPitch(m_data->channelId, m_data->end / (float)g_sequencer.getFramesInLoop(),
+	c::events::setChannelPitch(m_data->channelId, m_data->end / (float)m_data->getFramesInLoop(),
 	    Thread::MAIN);
 }
 
@@ -161,5 +156,4 @@ void gePitchTool::cb_resetPitch()
 {
 	c::events::setChannelPitch(m_data->channelId, G_DEFAULT_PITCH, Thread::MAIN);
 }
-} // namespace v
-} // namespace giada
+} // namespace giada::v

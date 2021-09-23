@@ -27,17 +27,13 @@
 #include "gui/dialogs/actionEditor/baseActionEditor.h"
 #include "baseAction.h"
 #include "baseActionEditor.h"
-#include "core/sequencer.h"
 #include "core/const.h"
+#include "core/sequencer.h"
 #include "gridTool.h"
 #include <FL/Fl.H>
 #include <FL/fl_draw.H>
 
-extern giada::m::Sequencer g_sequencer;
-
-namespace giada
-{
-namespace v
+namespace giada::v
 {
 geBaseActionEditor::geBaseActionEditor(Pixel x, Pixel y, Pixel w, Pixel h,
     gdBaseActionEditor* base)
@@ -85,10 +81,10 @@ void geBaseActionEditor::baseDraw(bool clear) const
 	}
 
 	fl_color(G_COLOR_GREY_4);
-	drawVerticals(g_sequencer.getFramesInBeat());
+	drawVerticals(m_data->framesInBeat);
 
 	fl_color(G_COLOR_LIGHT_1);
-	drawVerticals(g_sequencer.getFramesInBar());
+	drawVerticals(m_data->framesInBar);
 
 	/* Cover unused area. Avoid drawing cover if width == 0 (i.e. beats are 32). */
 
@@ -103,7 +99,7 @@ void geBaseActionEditor::drawVerticals(int steps) const
 {
 	/* Start drawing from steps, not from 0. The zero-th element is always 
 	graphically useless. */
-	for (Frame i = steps; i < g_sequencer.getFramesInLoop(); i += steps)
+	for (Frame i = steps; i < m_data->framesInLoop; i += steps)
 	{
 		Pixel p = m_base->frameToPixel(i) + x();
 		fl_line(p, y() + 1, p, y() + h() - 2);
@@ -183,5 +179,4 @@ int geBaseActionEditor::release()
 	m_action = nullptr;
 	return ret;
 }
-} // namespace v
-} // namespace giada
+} // namespace giada::v

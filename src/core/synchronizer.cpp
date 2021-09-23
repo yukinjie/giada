@@ -63,14 +63,14 @@ void Synchronizer::sendMIDIsync(const model::Sequencer& clock)
 
 	/* TODO - only Master (_M) is implemented so far. */
 
-	if (m_conf.midiSync == MIDI_SYNC_CLOCK_M)
+	if (m_conf.midiSync == G_MIDI_SYNC_CLOCK_M)
 	{
 		if (currentFrame % (clock.framesInBeat / 24) == 0)
 			m_kernelMidi.send(MIDI_CLOCK, -1, -1);
 		return;
 	}
 
-	if (m_conf.midiSync == MIDI_SYNC_MTC_M)
+	if (m_conf.midiSync == G_MIDI_SYNC_MTC_M)
 	{
 
 		/* check if a new timecode frame has passed. If so, send MIDI TC
@@ -144,14 +144,14 @@ void Synchronizer::sendMIDIrewind()
     are not used. Instead, an MTC Full Frame message should be sent. The Full 
     Frame is a SysEx message that encodes the entire SMPTE time in one message. */
 
-	if (m_conf.midiSync == MIDI_SYNC_MTC_M)
+	if (m_conf.midiSync == G_MIDI_SYNC_MTC_M)
 	{
 		m_kernelMidi.send(MIDI_SYSEX, 0x7F, 0x00); // send msg on channel 0
 		m_kernelMidi.send(0x01, 0x01, 0x00);       // hours 0
 		m_kernelMidi.send(0x00, 0x00, 0x00);       // mins, secs, frames 0
 		m_kernelMidi.send(MIDI_EOX, -1, -1);       // end of sysex
 	}
-	else if (m_conf.midiSync == MIDI_SYNC_CLOCK_M)
+	else if (m_conf.midiSync == G_MIDI_SYNC_CLOCK_M)
 		m_kernelMidi.send(MIDI_POSITION_PTR, 0, 0);
 }
 
@@ -159,7 +159,7 @@ void Synchronizer::sendMIDIrewind()
 
 void Synchronizer::sendMIDIstart()
 {
-	if (m_conf.midiSync == MIDI_SYNC_CLOCK_M)
+	if (m_conf.midiSync == G_MIDI_SYNC_CLOCK_M)
 	{
 		m_kernelMidi.send(MIDI_START, -1, -1);
 		m_kernelMidi.send(MIDI_POSITION_PTR, 0, 0);
@@ -170,7 +170,7 @@ void Synchronizer::sendMIDIstart()
 
 void Synchronizer::sendMIDIstop()
 {
-	if (m_conf.midiSync == MIDI_SYNC_CLOCK_M)
+	if (m_conf.midiSync == G_MIDI_SYNC_CLOCK_M)
 		m_kernelMidi.send(MIDI_STOP, -1, -1);
 }
 

@@ -90,6 +90,7 @@ list(APPEND SOURCES
 	src/glue/sampleEditor.cpp
 	src/glue/actionEditor.cpp
 	src/glue/config.cpp
+	src/glue/layout.cpp
 	src/gui/dialogs/window.cpp
 	src/gui/dispatcher.cpp
 	src/gui/updater.cpp

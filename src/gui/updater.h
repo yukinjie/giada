@@ -27,9 +27,14 @@
 #ifndef G_V_UPDATER_H
 #define G_V_UPDATER_H
 
+namespace giada::m::model
+{
+class Model;
+}
+
 namespace giada::v::updater
 {
-void init();
+void init(m::model::Model&);
 void update(void* p);
 void close();
 } // namespace giada::v::updater

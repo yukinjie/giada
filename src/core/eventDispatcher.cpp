@@ -38,6 +38,12 @@ EventDispatcher::EventDispatcher()
 , onMixerSignalCallback(nullptr)
 , onMixerEndOfRecCallback(nullptr)
 {
+}
+
+/* -------------------------------------------------------------------------- */
+
+void EventDispatcher::start()
+{
 	m_worker.start([this]() { process(); }, /*sleep=*/G_EVENT_DISPATCHER_RATE_MS);
 }
 

@@ -30,6 +30,12 @@
 #include "core/types.h"
 #include <string>
 
+namespace giada::m
+{
+class Sequencer;
+class MixerHandler;
+} // namespace giada::m
+
 namespace giada::v
 {
 class gdWindow;
@@ -64,7 +70,7 @@ Updates attributes of static widgets, i.e. those elements that don't get
 automatically refreshed during the UI update loop. Useful when loading a new 
 patch. */
 
-void updateStaticWidgets();
+void updateStaticWidgets(const m::Sequencer&, const m::MixerHandler&);
 
 /* updateMainWinLabel
 Updates the name of the main window */

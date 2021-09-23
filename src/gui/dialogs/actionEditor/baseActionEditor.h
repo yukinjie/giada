@@ -72,7 +72,7 @@ protected:
 	static constexpr float MAX_RATIO  = 40000.0f;
 	static constexpr float RATIO_STEP = 1.5f;
 
-	gdBaseActionEditor(ID channelId, m::conf::Data& c);
+	gdBaseActionEditor(ID channelId, m::conf::Data&, Frame framesInBeat);
 
 	/* getMouseOverContent
 	Returns mouse x-position relative to the viewport content. */
@@ -87,7 +87,7 @@ protected:
 	/* computeWidth
 	Computes total width, in pixel. */
 
-	void computeWidth();
+	void computeWidth(Frame framesInSeq, Frame framesInLoop);
 
 	/* prepareWindow
 	Initializes window (favicon, limits, ...). */

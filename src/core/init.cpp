@@ -66,21 +66,22 @@
 #include "utils/ver.h"
 #include <FL/Fl.H>
 
-extern giada::v::gdMainWindow*  G_MainWin;
-extern giada::m::model::Model   g_model;
-extern giada::m::KernelAudio    g_kernelAudio;
-extern giada::m::Sequencer      g_sequencer;
-extern giada::m::ActionRecorder g_actionRecorder;
-extern giada::m::MixerHandler   g_mixerHandler;
-extern giada::m::Synchronizer   g_synchronizer;
-extern giada::m::PluginHost     g_pluginHost;
-extern giada::m::PluginManager  g_pluginManager;
-extern giada::m::ChannelManager g_channelManager;
-extern giada::m::WaveManager    g_waveManager;
-extern giada::m::KernelMidi     g_kernelMidi;
-extern giada::m::conf::Data     g_conf;
-extern giada::m::patch::Data    g_patch;
-extern giada::m::midiMap::Data  g_midiMap;
+extern giada::v::gdMainWindow*   G_MainWin;
+extern giada::m::model::Model    g_model;
+extern giada::m::KernelAudio     g_kernelAudio;
+extern giada::m::Sequencer       g_sequencer;
+extern giada::m::ActionRecorder  g_actionRecorder;
+extern giada::m::MixerHandler    g_mixerHandler;
+extern giada::m::Synchronizer    g_synchronizer;
+extern giada::m::PluginHost      g_pluginHost;
+extern giada::m::PluginManager   g_pluginManager;
+extern giada::m::ChannelManager  g_channelManager;
+extern giada::m::WaveManager     g_waveManager;
+extern giada::m::KernelMidi      g_kernelMidi;
+extern giada::m::conf::Data      g_conf;
+extern giada::m::patch::Data     g_patch;
+extern giada::m::midiMap::Data   g_midiMap;
+extern giada::m::EventDispatcher g_eventDispatcher;
 
 namespace giada::m::init
 {
@@ -108,6 +109,8 @@ void initAudio_()
 	g_kernelAudio.openDevice(g_conf);
 	if (!g_kernelAudio.isReady())
 		return;
+	g_mixerHandler.reset(g_sequencer.getMaxFramesInLoop(g_conf.samplerate),
+	    g_kernelAudio.getRealBufSize(), g_channelManager);
 	g_mixerHandler.startRendering();
 	g_kernelAudio.startStream();
 }
@@ -127,14 +130,14 @@ void initMIDI_()
 void initGUI_(int argc, char** argv)
 {
 	/* This is of paramount importance on Linux with VST enabled, otherwise many
-	plug-ins go nuts and crash hard. It seems that some plug-ins or our Juce-based
+	plug-ins go nuts and crash hard. It seems that some plug-ins on our Juce-based
 	PluginHost use Xlib concurrently. */
 
 #if (defined(__linux__) || defined(__FreeBSD__)) && defined(WITH_VST)
 	XInitThreads();
 #endif
 
-	G_MainWin = new v::gdMainWindow(G_MIN_GUI_WIDTH, G_MIN_GUI_HEIGHT, "", argc, argv);
+	G_MainWin = new v::gdMainWindow(G_MIN_GUI_WIDTH, G_MIN_GUI_HEIGHT, "", argc, argv, g_conf);
 	G_MainWin->resize(g_conf.mainWindowX, g_conf.mainWindowY, g_conf.mainWindowW,
 	    g_conf.mainWindowH);
 
@@ -144,8 +147,8 @@ void initGUI_(int argc, char** argv)
 		v::gdAlert("Your soundcard isn't configured correctly.\n"
 		           "Check the configuration and restart Giada.");
 
-	v::updater::init();
-	u::gui::updateStaticWidgets();
+	v::updater::init(g_model);
+	u::gui::updateStaticWidgets(g_sequencer, g_mixerHandler);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -206,8 +209,11 @@ void startup(int argc, char** argv)
 
 	initConf_();
 	initAudio_();
+	g_model.debug();
 	initMIDI_();
 	initGUI_(argc, argv);
+
+	g_eventDispatcher.start();
 }
 
 /* -------------------------------------------------------------------------- */
@@ -246,7 +252,7 @@ void reset()
 	g_mixerHandler.startRendering();
 
 	u::gui::updateMainWinLabel(G_DEFAULT_PATCH_NAME);
-	u::gui::updateStaticWidgets();
+	u::gui::updateStaticWidgets(g_sequencer, g_mixerHandler);
 }
 
 /* -------------------------------------------------------------------------- */

@@ -238,24 +238,37 @@ int PluginManager::countAvailablePlugins() const
 
 /* -------------------------------------------------------------------------- */
 
-int PluginManager::countUnknownPlugins() const
+std::vector<PluginManager::PluginInfo> PluginManager::getPluginsInfo() const
 {
-	return m_unknownPluginList.size();
-}
+	std::vector<PluginInfo> out;
 
-/* -------------------------------------------------------------------------- */
+	for (int i = 0; i < m_knownPluginList.getNumTypes(); i++)
+	{
+		juce::PluginDescription pd = m_knownPluginList.getTypes()[i];
+		PluginInfo              pi;
 
-PluginManager::PluginInfo PluginManager::getAvailablePluginInfo(int i) const
-{
-	juce::PluginDescription pd = m_knownPluginList.getTypes()[i];
-	PluginInfo              pi;
-	pi.uid              = pd.fileOrIdentifier.toStdString();
-	pi.name             = pd.descriptiveName.toStdString();
-	pi.category         = pd.category.toStdString();
-	pi.manufacturerName = pd.manufacturerName.toStdString();
-	pi.format           = pd.pluginFormatName.toStdString();
-	pi.isInstrument     = pd.isInstrument;
-	return pi;
+		pi.uid              = pd.fileOrIdentifier.toStdString();
+		pi.name             = pd.descriptiveName.toStdString();
+		pi.category         = pd.category.toStdString();
+		pi.manufacturerName = pd.manufacturerName.toStdString();
+		pi.format           = pd.pluginFormatName.toStdString();
+		pi.isInstrument     = pd.isInstrument;
+		pi.exists           = m_formatManager.doesPluginStillExist(*m_knownPluginList.getTypeForFile(pi.uid));
+		pi.isKnown          = true;
+		out.push_back(pi);
+	}
+
+	for (const std::string& uid : m_unknownPluginList)
+	{
+		PluginInfo pi;
+		pi.uid          = uid;
+		pi.isInstrument = false;
+		pi.exists       = false;
+		pi.isKnown      = false;
+		out.push_back(pi);
+	}
+
+	return out;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -263,20 +276,6 @@ PluginManager::PluginInfo PluginManager::getAvailablePluginInfo(int i) const
 bool PluginManager::hasMissingPlugins() const
 {
 	return m_missingPlugins;
-}
-
-/* -------------------------------------------------------------------------- */
-
-std::string PluginManager::getUnknownPluginInfo(int i) const
-{
-	return m_unknownPluginList.at(i);
-}
-
-/* -------------------------------------------------------------------------- */
-
-bool PluginManager::doesPluginExist(const std::string& pid) const
-{
-	return m_formatManager.doesPluginStillExist(*m_knownPluginList.getTypeForFile(pid));
 }
 
 /* -------------------------------------------------------------------------- */

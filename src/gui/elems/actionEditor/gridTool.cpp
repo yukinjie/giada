@@ -24,21 +24,19 @@
 *
 * --------------------------------------------------------------------------- */
 
-#include "gridTool.h"
-#include "core/sequencer.h"
+#include "gui/elems/actionEditor/gridTool.h"
 #include "core/conf.h"
 #include "gui/elems/basics/check.h"
 #include "gui/elems/basics/choice.h"
 #include "utils/math.h"
 #include <FL/Fl_Double_Window.H>
 
-extern giada::m::Sequencer  g_sequencer;
-extern giada::m::conf::Data g_conf;
-
 namespace giada::v
 {
-geGridTool::geGridTool(Pixel x, Pixel y)
+geGridTool::geGridTool(Pixel x, Pixel y, m::conf::Data& c, Frame framesInBeat)
 : Fl_Group(x, y, 80, 20)
+, m_conf(c)
+, m_framesInBeat(framesInBeat)
 {
 	gridType = new geChoice(x, y, 40, 20);
 	gridType->add("1");
@@ -54,8 +52,8 @@ geGridTool::geGridTool(Pixel x, Pixel y)
 
 	active = new geCheck(gridType->x() + gridType->w() + 4, y, 20, 20);
 
-	gridType->value(g_conf.actionEditorGridVal);
-	active->value(g_conf.actionEditorGridOn);
+	gridType->value(m_conf.actionEditorGridVal);
+	active->value(m_conf.actionEditorGridOn);
 
 	end();
 
@@ -67,8 +65,8 @@ geGridTool::geGridTool(Pixel x, Pixel y)
 
 geGridTool::~geGridTool()
 {
-	g_conf.actionEditorGridVal = gridType->value();
-	g_conf.actionEditorGridOn  = active->value();
+	m_conf.actionEditorGridVal = gridType->value();
+	m_conf.actionEditorGridOn  = active->value();
 }
 
 /* -------------------------------------------------------------------------- */
@@ -128,6 +126,6 @@ Frame geGridTool::getSnapFrame(Frame v) const
 
 Frame geGridTool::getCellSize() const
 {
-	return g_sequencer.getFramesInBeat() / getValue();
+	return m_framesInBeat / getValue();
 }
 } // namespace giada::v

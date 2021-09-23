@@ -24,8 +24,7 @@
  *
  * -------------------------------------------------------------------------- */
 
-#include "waveform.h"
-#include "core/conf.h"
+#include "gui/elems/sampleEditor/waveform.h"
 #include "core/const.h"
 #include "core/mixer.h"
 #include "core/model/model.h"
@@ -42,11 +41,9 @@
 #include <cassert>
 #include <cmath>
 
-extern giada::m::conf::Data g_conf;
-
 namespace giada::v
 {
-geWaveform::geWaveform(int x, int y, int w, int h)
+geWaveform::geWaveform(int x, int y, int w, int h, bool gridEnabled, int gridVal)
 : Fl_Widget(x, y, w, h, nullptr)
 , m_selection{}
 , m_data(nullptr)
@@ -62,8 +59,8 @@ geWaveform::geWaveform(int x, int y, int w, int h)
 {
 	m_waveform.size = w;
 
-	m_grid.snap  = g_conf.sampleEditorGridOn;
-	m_grid.level = g_conf.sampleEditorGridVal;
+	m_grid.snap  = gridEnabled;
+	m_grid.level = gridVal;
 }
 
 /* -------------------------------------------------------------------------- */

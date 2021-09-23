@@ -44,12 +44,12 @@
 #include <string>
 
 extern giada::v::gdMainWindow* G_MainWin;
-extern giada::m::conf::Data    g_conf;
 
 namespace giada::v
 {
-gdPluginList::gdPluginList(ID channelId)
-: gdWindow(g_conf.pluginListX, g_conf.pluginListY, 468, 204)
+gdPluginList::gdPluginList(ID channelId, m::conf::Data& c)
+: gdWindow(c.pluginListX, c.pluginListY, 468, 204)
+, m_conf(c)
 , m_channelId(channelId)
 {
 	end();
@@ -71,8 +71,8 @@ gdPluginList::gdPluginList(ID channelId)
 
 gdPluginList::~gdPluginList()
 {
-	g_conf.pluginListX = x();
-	g_conf.pluginListY = y();
+	m_conf.pluginListX = x();
+	m_conf.pluginListY = y();
 }
 
 /* -------------------------------------------------------------------------- */
@@ -112,11 +112,11 @@ void gdPluginList::rebuild()
 
 void gdPluginList::cb_addPlugin()
 {
-	int wx = g_conf.pluginChooserX;
-	int wy = g_conf.pluginChooserY;
-	int ww = g_conf.pluginChooserW;
-	int wh = g_conf.pluginChooserH;
-	u::gui::openSubWindow(G_MainWin, new v::gdPluginChooser(wx, wy, ww, wh, m_plugins.channelId), WID_FX_CHOOSER);
+	int wx = m_conf.pluginChooserX;
+	int wy = m_conf.pluginChooserY;
+	int ww = m_conf.pluginChooserW;
+	int wh = m_conf.pluginChooserH;
+	u::gui::openSubWindow(G_MainWin, new v::gdPluginChooser(wx, wy, ww, wh, m_plugins.channelId, m_conf), WID_FX_CHOOSER);
 }
 
 /* -------------------------------------------------------------------------- */

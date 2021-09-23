@@ -24,48 +24,42 @@
  *
  * -------------------------------------------------------------------------- */
 
-#ifndef GD_MAINWINDOW_H
-#define GD_MAINWINDOW_H
+#ifndef G_GLUE_LAYOUT_H
+#define G_GLUE_LAYOUT_H
 
-#include "window.h"
+#include "core/types.h"
 
-namespace giada::m::conf
+namespace giada::v
+{
+class gdWindow;
+}
+
+namespace giada::c::channel
 {
 struct Data;
 }
 
-namespace giada::v
+namespace giada::c::layout
 {
-class geKeyboard;
-class geMainIO;
-class geMainMenu;
-class geSequencer;
-class geMainTransport;
-class geMainTimer;
-class gdMainWindow : public gdWindow
-{
-public:
-	gdMainWindow(int w, int h, const char* title, int argc, char** argv, m::conf::Data&);
-	~gdMainWindow();
-
-	void refresh() override;
-	void rebuild() override;
-
-	/* clearKeyboard
-	Resets Keyboard to initial state, with no columns. */
-
-	void clearKeyboard();
-
-	geKeyboard*      keyboard;
-	geSequencer*     sequencer;
-	geMainMenu*      mainMenu;
-	geMainIO*        mainIO;
-	geMainTimer*     mainTimer;
-	geMainTransport* mainTransport;
-
-private:
-	m::conf::Data& m_conf;
-};
-} // namespace giada::v
+void openBrowserForProjectLoad();
+void openBrowserForProjectSave();
+void openBrowserForSampleLoad(ID channelId);
+void openBrowserForSampleSave(ID channelId);
+void openBrowserForPlugins(v::gdWindow& parent);
+void openAboutWindow();
+void openKeyGrabberWindow(const c::channel::Data&);
+void openConfigWindow();
+void openMasterMidiInputWindow();
+void openChannelMidiInputWindow(ID channelId);
+void openSampleChannelMidiOutputWindow(ID channelId);
+void openMidiChannelMidiOutputWindow(ID channelId);
+void openSampleActionEditor(ID channelId);
+void openMidiActionEditor(ID channelId);
+void openSampleEditor(ID channelId);
+void openRenameChannelWindow(const c::channel::Data&);
+void openChannelPluginListWindow(ID channelId);
+void openMasterInPluginListWindow();
+void openMasterOutPluginListWindow();
+} // namespace giada::c::layout
 
 #endif

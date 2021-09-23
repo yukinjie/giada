@@ -40,12 +40,11 @@
 #include <FL/Fl.H>
 #include <FL/Fl_Tooltip.H>
 
-extern giada::m::conf::Data g_conf;
-
 namespace giada::v
 {
-gdMainWindow::gdMainWindow(int W, int H, const char* title, int argc, char** argv)
+gdMainWindow::gdMainWindow(int W, int H, const char* title, int argc, char** argv, m::conf::Data& c)
 : gdWindow(W, H, title)
+, m_conf(c)
 {
 	Fl::visible_focus(0);
 
@@ -62,7 +61,7 @@ gdMainWindow::gdMainWindow(int W, int H, const char* title, int argc, char** arg
 	Fl_Tooltip::color(G_COLOR_GREY_1);
 	Fl_Tooltip::textcolor(G_COLOR_LIGHT_2);
 	Fl_Tooltip::size(G_GUI_FONT_SIZE_BASE);
-	Fl_Tooltip::enable(g_conf.showTooltips);
+	Fl_Tooltip::enable(m_conf.showTooltips);
 
 	size_range(G_MIN_GUI_WIDTH, G_MIN_GUI_HEIGHT);
 
@@ -119,10 +118,10 @@ gdMainWindow::gdMainWindow(int W, int H, const char* title, int argc, char** arg
 
 gdMainWindow::~gdMainWindow()
 {
-	g_conf.mainWindowX = x();
-	g_conf.mainWindowY = y();
-	g_conf.mainWindowW = w();
-	g_conf.mainWindowH = h();
+	m_conf.mainWindowX = x();
+	m_conf.mainWindowY = y();
+	m_conf.mainWindowW = w();
+	m_conf.mainWindowH = h();
 }
 
 /* -------------------------------------------------------------------------- */

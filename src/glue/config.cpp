@@ -24,14 +24,23 @@
  *
  * -------------------------------------------------------------------------- */
 
-#include "config.h"
+#include "glue/config.h"
 #include "core/conf.h"
 #include "core/const.h"
 #include "core/kernelAudio.h"
+#include "core/kernelMidi.h"
+#include "core/midiMap.h"
+#include "core/plugins/pluginManager.h"
 #include "deps/rtaudio/RtAudio.h"
+#include "utils/fs.h"
+#include "utils/vector.h"
+#include <FL/Fl_Tooltip.H>
 
-extern giada::m::KernelAudio g_kernelAudio;
-extern giada::m::conf::Data  g_conf;
+extern giada::m::KernelAudio   g_kernelAudio;
+extern giada::m::KernelMidi    g_kernelMidi;
+extern giada::m::PluginManager g_pluginManager;
+extern giada::m::midiMap::Data g_midiMap;
+extern giada::m::conf::Data    g_conf;
 
 namespace giada::c::config
 {
@@ -161,6 +170,75 @@ AudioData getAudioData()
 
 /* -------------------------------------------------------------------------- */
 
+MidiData getMidiData()
+{
+	MidiData midiData;
+
+#if defined(G_OS_LINUX)
+
+	if (g_kernelMidi.hasAPI(RtMidi::LINUX_ALSA))
+		midiData.apis[G_MIDI_API_ALSA] = "ALSA";
+	if (g_kernelMidi.hasAPI(RtMidi::UNIX_JACK))
+		midiData.apis[G_MIDI_API_JACK] = "JACK";
+
+#elif defined(G_OS_FREEBSD)
+
+	if (g_kernelMidi.hasAPI(RtMidi::UNIX_JACK))
+		midiData.apis[G_MIDI_API_JACK] = "JACK";
+
+#elif defined(G_OS_WINDOWS)
+
+	if (g_kernelMidi.hasAPI(RtMidi::WINDOWS_MM))
+		midiData.apis[G_MIDI_API_MM] = "Multimedia MIDI";
+
+#elif defined(G_OS_MAC)
+
+	if (g_kernelMidi.hasAPI(RtMidi::MACOSX_CORE))
+		midiData.apis[G_MIDI_API_CORE] = "OSX Core MIDI";
+
+#endif
+
+	midiData.syncModes[G_MIDI_SYNC_NONE]    = "(disabled)";
+	midiData.syncModes[G_MIDI_SYNC_CLOCK_M] = "MIDI Clock (master)";
+	midiData.syncModes[G_MIDI_SYNC_MTC_M]   = "MTC (master)";
+
+	midiData.midiMaps = g_midiMap.maps;
+	midiData.midiMap  = u::vector::indexOf(midiData.midiMaps, g_conf.midiMapPath);
+
+	for (unsigned i = 0; i < g_kernelMidi.countOutPorts(); i++)
+		midiData.outPorts.push_back(g_kernelMidi.getOutPortName(i));
+	for (unsigned i = 0; i < g_kernelMidi.countInPorts(); i++)
+		midiData.inPorts.push_back(g_kernelMidi.getInPortName(i));
+
+	midiData.api      = g_conf.midiSystem;
+	midiData.syncMode = g_conf.midiSync;
+	midiData.outPort  = g_conf.midiPortOut;
+	midiData.inPort   = g_conf.midiPortIn;
+
+	return midiData;
+}
+
+/* -------------------------------------------------------------------------- */
+
+PluginData getPluginData()
+{
+	PluginData pluginData;
+	pluginData.numAvailablePlugins = g_pluginManager.countAvailablePlugins();
+	pluginData.pluginPath          = g_conf.pluginPath;
+	return pluginData;
+}
+
+/* -------------------------------------------------------------------------- */
+
+MiscData getMiscData()
+{
+	MiscData miscData;
+	miscData.logMode      = g_conf.logMode;
+	miscData.showTooltips = g_conf.showTooltips;
+	return miscData;
+}
+/* -------------------------------------------------------------------------- */
+
 void save(const AudioData& data)
 {
 	g_conf.soundSystem      = data.api;
@@ -175,5 +253,40 @@ void save(const AudioData& data)
 	g_conf.buffersize       = data.bufferSize;
 	g_conf.recTriggerLevel  = data.recTriggerLevel;
 	g_conf.samplerate       = data.sampleRate;
+}
+
+/* -------------------------------------------------------------------------- */
+
+void save(const PluginData& data)
+{
+	g_conf.pluginPath = data.pluginPath;
+}
+
+/* -------------------------------------------------------------------------- */
+
+void save(const MidiData& data)
+{
+	g_conf.midiSystem  = data.api;
+	g_conf.midiPortOut = data.outPort;
+	g_conf.midiPortIn  = data.inPort;
+	g_conf.midiMapPath = ""; // TODO
+	g_conf.midiSync    = data.syncMode;
+}
+
+/* -------------------------------------------------------------------------- */
+
+void save(const MiscData& data)
+{
+	g_conf.logMode      = data.logMode;
+	g_conf.showTooltips = data.showTooltips;
+	Fl_Tooltip::enable(g_conf.showTooltips);
+}
+
+/* -------------------------------------------------------------------------- */
+
+void scanPlugins(std::string dir, const std::function<void(float)>& progress)
+{
+	g_pluginManager.scanDirs(dir, progress);
+	g_pluginManager.saveList(u::fs::getHomePath() + G_SLASH + "plugins.xml");
 }
 } // namespace giada::c::config

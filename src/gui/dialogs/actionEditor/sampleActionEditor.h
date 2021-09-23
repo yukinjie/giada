@@ -38,7 +38,7 @@ namespace giada::v
 class gdSampleActionEditor : public gdBaseActionEditor
 {
 public:
-	gdSampleActionEditor(ID channelId, m::conf::Data& c);
+	gdSampleActionEditor(ID channelId, m::conf::Data&, Frame framesInBeat);
 	~gdSampleActionEditor();
 
 	void rebuild() override;

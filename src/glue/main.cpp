@@ -149,6 +149,30 @@ Sequencer getSequencer()
 
 /* -------------------------------------------------------------------------- */
 
+Transport getTransport()
+{
+	Transport transport;
+	transport.isRunning         = g_sequencer.isRunning();
+	transport.isRecordingAction = g_recorder.isRecordingAction();
+	transport.isRecordingInput  = g_recorder.isRecordingInput();
+	transport.isMetronomeOn     = g_sequencer.isMetronomeOn();
+	transport.recTriggerMode    = g_conf.recTriggerMode;
+	transport.inputRecMode      = g_conf.inputRecMode;
+	return transport;
+}
+
+/* -------------------------------------------------------------------------- */
+
+MainMenu getMainMenu()
+{
+	MainMenu mainMenu;
+	mainMenu.hasAudioData = g_mixerHandler.hasAudioData();
+	mainMenu.hasActions   = g_mixerHandler.hasActions();
+	return mainMenu;
+}
+
+/* -------------------------------------------------------------------------- */
+
 void setBpm(const char* i, const char* f)
 {
 	/* Never change this stuff while recording audio. */
@@ -247,11 +271,25 @@ void toggleFreeInputRec()
 
 /* -------------------------------------------------------------------------- */
 
+void printDebugInfo()
+{
+	g_model.debug();
+}
+
+/* -------------------------------------------------------------------------- */
+
 void closeProject()
 {
 	if (!v::gdConfirmWin("Warning", "Close project: are you sure?"))
 		return;
 	m::init::reset();
 	g_mixer.enable();
+}
+
+/* -------------------------------------------------------------------------- */
+
+void quitGiada()
+{
+	G_MainWin->do_callback();
 }
 } // namespace giada::c::main

@@ -55,7 +55,7 @@ struct Data
 	int         midiPortIn  = G_DEFAULT_MIDI_PORT_IN;
 	std::string midiMapPath = "";
 	std::string lastFileMap = "";
-	int         midiSync    = MIDI_SYNC_NONE;
+	int         midiSync    = G_MIDI_SYNC_NONE;
 	float       midiTCfps   = 25.0f;
 
 	bool chansStopOnSeqHalt         = false;

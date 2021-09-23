@@ -32,13 +32,18 @@
 
 class geCheck;
 
+namespace giada::m::conf
+{
+struct Data;
+}
+
 namespace giada::v
 {
 class geChoice;
 class geGridTool : public Fl_Group
 {
 public:
-	geGridTool(Pixel x, Pixel y);
+	geGridTool(Pixel x, Pixel y, m::conf::Data&, Frame framesInBeat);
 	~geGridTool();
 
 	int  getValue() const;
@@ -52,6 +57,9 @@ public:
 	Frame getCellSize() const;
 
 private:
+	m::conf::Data& m_conf;
+	Frame          m_framesInBeat;
+
 	geChoice* gridType;
 	geCheck*  active;
 

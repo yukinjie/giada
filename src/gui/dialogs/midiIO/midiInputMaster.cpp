@@ -36,8 +36,6 @@
 #include "utils/gui.h"
 #include <FL/Fl_Pack.H>
 
-extern giada::m::conf::Data g_conf;
-
 namespace giada::v
 {
 geMasterLearnerPack::geMasterLearnerPack(int x, int y)
@@ -77,8 +75,8 @@ void geMasterLearnerPack::update(const c::io::Master_InputData& d)
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-gdMidiInputMaster::gdMidiInputMaster()
-: gdMidiInputBase(g_conf.midiInputX, g_conf.midiInputY, 300, 284, "MIDI Input Setup (global)")
+gdMidiInputMaster::gdMidiInputMaster(m::conf::Data& c)
+: gdMidiInputBase(c.midiInputX, c.midiInputY, 300, 284, "MIDI Input Setup (global)", c)
 {
 	end();
 

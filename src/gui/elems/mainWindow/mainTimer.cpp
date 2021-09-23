@@ -97,7 +97,7 @@ void geMainTimer::cb_bpm()
 
 void geMainTimer::cb_meter()
 {
-	u::gui::openSubWindow(G_MainWin, new gdBeatsInput(), WID_BEATS);
+	u::gui::openSubWindow(G_MainWin, new gdBeatsInput(m_timer.beats, m_timer.bars), WID_BEATS);
 }
 
 /* -------------------------------------------------------------------------- */

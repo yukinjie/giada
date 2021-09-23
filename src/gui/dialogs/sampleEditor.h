@@ -41,6 +41,12 @@ namespace giada::m
 {
 class Wave;
 }
+
+namespace giada::m::conf
+{
+struct Data;
+}
+
 namespace giada::v
 {
 class geChoice;
@@ -58,7 +64,7 @@ class gdSampleEditor : public gdWindow
 	friend class geWaveform;
 
 public:
-	gdSampleEditor(ID channelId);
+	gdSampleEditor(ID channelId, m::conf::Data&);
 	~gdSampleEditor();
 
 	void rebuild() override;
@@ -86,7 +92,7 @@ public:
 	geCheck*        loop;
 	geBox*          info;
 
-  private:
+private:
 	gePack*  createUpperBar();
 	gePack*  createBottomBar(int x, int y, int h);
 	geGroup* createPreviewBox(int x, int y, int h);
@@ -112,6 +118,7 @@ public:
 	ID m_channelId;
 
 	c::sampleEditor::Data m_data;
+	m::conf::Data&        m_conf;
 };
 } // namespace giada::v
 

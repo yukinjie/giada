@@ -26,7 +26,7 @@
 
 #ifdef WITH_VST
 
-#include "pluginWindowGUI.h"
+#include "gui/dialogs/pluginWindowGUI.h"
 #include "core/const.h"
 #include "glue/plugin.h"
 #include "utils/gui.h"
@@ -35,8 +35,6 @@
 #ifdef G_OS_MAC
 #import "utils/cocoa.h" // objective-c
 #endif
-
-extern giada::m::PluginHost g_pluginHost;
 
 namespace giada::v
 {
@@ -124,8 +122,8 @@ void gdPluginWindowGUI::cb_close()
 
 void gdPluginWindowGUI::cb_refresh()
 {
-	g_pluginHost.runDispatchLoop();
-	Fl::repeat_timeout(G_GUI_PLUGIN_RATE, cb_refresh, (void*)this);
+	c::plugin::runDispatchLoop();
+	Fl::repeat_timeout(G_GUI_PLUGIN_RATE, cb_refresh, this);
 }
 
 /* -------------------------------------------------------------------------- */

@@ -65,29 +65,27 @@ public:
 		std::string manufacturerName;
 		std::string format;
 		bool        isInstrument;
+		bool        exists;
+		bool        isKnown;
 	};
 
 	PluginManager(SortMethod);
 
-	/* getAvailablePluginInfo
-	Returns the available plugin information (name, type, ...) given a plug-in
-	index. */
+	/* getPluginsInfo
+	Returns a vector of PluginInfo objects containing all plug-ins, known and
+	unknown, scanned so far. */
 
-	PluginInfo getAvailablePluginInfo(int index) const;
+	std::vector<PluginInfo> getPluginsInfo() const;
 
-	std::string getUnknownPluginInfo(int index) const;
-	bool        doesPluginExist(const std::string& pid) const;
-	bool        hasMissingPlugins() const;
+	/* hasMissingPlugins
+	True if some plug-ins have been marked as missing during the initial scan. */
+
+	bool hasMissingPlugins() const;
 
 	/* countAvailablePlugins
 	Returns how many plug-ins are ready and available for usage. */
 
 	int countAvailablePlugins() const;
-
-	/* countUnknownPlugins
-	Returns how many plug-ins are in a unknown/not-found state. */
-
-	int countUnknownPlugins() const;
 
 	/* reset
 	Brings everything back to the initial state. */

@@ -38,13 +38,17 @@ class geButton;
 class geInput;
 class geProgress;
 
-namespace giada
-{
-namespace m
+namespace giada::m
 {
 class Channel;
 }
-namespace v
+
+namespace giada::m::conf
+{
+struct Data;
+}
+
+namespace giada::v
 {
 class geBrowser;
 class gdBrowserBase : public gdWindow
@@ -69,9 +73,9 @@ public:
 	void showStatusBar();
 	void hideStatusBar();
 
-  protected:
+protected:
 	gdBrowserBase(const std::string& title, const std::string& path,
-	    std::function<void(void*)> f, ID channelId);
+	    std::function<void(void*)> f, ID channelId, m::conf::Data&);
 
 	static void cb_up(Fl_Widget* /*w*/, void* p);
 	static void cb_close(Fl_Widget* /*w*/, void* p);
@@ -85,7 +89,8 @@ public:
 
 	std::function<void(void*)> m_callback;
 
-	ID m_channelId;
+	m::conf::Data& m_conf;
+	ID             m_channelId;
 
 	Fl_Group*   groupTop;
 	geCheck*    hiddenFiles;
@@ -96,7 +101,6 @@ public:
 	geButton*   updir;
 	geProgress* status;
 };
-} // namespace v
-} // namespace giada
+} // namespace giada::v
 
 #endif

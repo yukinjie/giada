@@ -30,6 +30,7 @@
 #include "core/kernelAudio.h"
 #include "core/mixerHandler.h"
 #include "core/model/model.h"
+#include "core/sequencer.h"
 #include "core/wave.h"
 #include "core/waveManager.h"
 #include "glue/events.h"
@@ -57,6 +58,7 @@ extern giada::m::model::Model   g_model;
 extern giada::m::MixerHandler   g_mixerHandler;
 extern giada::m::KernelAudio    g_kernelAudio;
 extern giada::m::ChannelManager g_channelManager;
+extern giada::m::Sequencer      g_sequencer;
 extern giada::m::WaveManager    g_waveManager;
 
 namespace giada::c::sampleEditor
@@ -136,6 +138,16 @@ Frame Data::a_getPreviewTracker() const
 const m::Wave& Data::getWaveRef() const
 {
 	return *m_channel->samplePlayer->getWave();
+}
+
+Frame Data::getFramesInBar() const
+{
+	return g_sequencer.getFramesInBar();
+}
+
+Frame Data::getFramesInLoop() const
+{
+	return g_sequencer.getFramesInLoop();
 }
 
 /* -------------------------------------------------------------------------- */

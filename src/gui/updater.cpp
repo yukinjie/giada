@@ -24,19 +24,17 @@
  *
  * -------------------------------------------------------------------------- */
 
-#include "updater.h"
+#include "gui/updater.h"
 #include "core/const.h"
 #include "core/model/model.h"
 #include "utils/gui.h"
 #include <FL/Fl.H>
 
-extern giada::m::model::Model g_model;
-
 namespace giada::v::updater
 {
-void init()
+void init(m::model::Model& model)
 {
-	g_model.onSwap = [](m::model::SwapType type) {
+	model.onSwap = [](m::model::SwapType type) {
 		if (type == m::model::SwapType::NONE)
 			return;
 

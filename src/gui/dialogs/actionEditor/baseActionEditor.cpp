@@ -24,8 +24,7 @@
  *
  * -------------------------------------------------------------------------- */
 
-#include "baseActionEditor.h"
-#include "core/sequencer.h"
+#include "gui/dialogs/actionEditor/baseActionEditor.h"
 #include "core/conf.h"
 #include "core/const.h"
 #include "core/graphics.h"
@@ -44,14 +43,12 @@
 #include <limits>
 #include <string>
 
-extern giada::m::Sequencer g_sequencer;
-
 namespace giada::v
 {
-gdBaseActionEditor::gdBaseActionEditor(ID channelId, m::conf::Data& conf)
+gdBaseActionEditor::gdBaseActionEditor(ID channelId, m::conf::Data& conf, Frame framesInBeat)
 : gdWindow(conf.actionEditorX, conf.actionEditorY, conf.actionEditorW, conf.actionEditorH)
 , channelId(channelId)
-, gridTool(0, 0)
+, gridTool(0, 0, conf, framesInBeat)
 , zoomInBtn(0, 0, G_GUI_UNIT, G_GUI_UNIT, "", zoomInOff_xpm, zoomInOn_xpm)
 , zoomOutBtn(0, 0, G_GUI_UNIT, G_GUI_UNIT, "", zoomOutOff_xpm, zoomOutOn_xpm)
 , m_barTop(0, 0, Direction::HORIZONTAL)
@@ -107,10 +104,10 @@ void gdBaseActionEditor::cb_zoomOut(Fl_Widget* /*w*/, void* p) { ((gdBaseActionE
 
 /* -------------------------------------------------------------------------- */
 
-void gdBaseActionEditor::computeWidth()
+void gdBaseActionEditor::computeWidth(Frame framesInSeq, Frame framesInLoop)
 {
-	fullWidth = frameToPixel(g_sequencer.getFramesInSeq());
-	loopWidth = frameToPixel(g_sequencer.getFramesInLoop());
+	fullWidth = frameToPixel(framesInSeq);
+	loopWidth = frameToPixel(framesInLoop);
 }
 
 /* -------------------------------------------------------------------------- */

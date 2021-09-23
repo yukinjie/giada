@@ -44,6 +44,7 @@
 #include "gui/dialogs/mainWindow.h"
 #include "gui/dialogs/sampleEditor.h"
 #include "gui/dialogs/warnings.h"
+#include "gui/dispatcher.h"
 #include "gui/elems/basics/dial.h"
 #include "gui/elems/basics/input.h"
 #include "gui/elems/mainWindow/keyboard/channelButton.h"
@@ -77,6 +78,7 @@ extern giada::m::ChannelManager g_channelManager;
 extern giada::m::conf::Data     g_conf;
 extern giada::m::patch::Data    g_patch;
 extern giada::m::WaveManager    g_waveManager;
+extern giada::v::Dispatcher     g_viewDispatcher;
 
 namespace giada::c::channel
 {
@@ -130,7 +132,8 @@ int  MidiData::getFilter() const { return m_channel->midiSender->filter; }
 /* -------------------------------------------------------------------------- */
 
 Data::Data(const m::channel::Data& c)
-: id(c.id)
+: viewDispatcher(g_viewDispatcher)
+, id(c.id)
 , columnId(c.columnId)
 #ifdef WITH_VST
 , plugins(c.plugins)
@@ -215,7 +218,7 @@ void addAndLoadChannel(ID columnId, const std::string& fname)
 	    g_conf.samplerate, g_conf.rsmpQuality);
 	if (res.status == G_RES_OK)
 		g_mixerHandler.addAndLoadChannel(columnId, std::move(res.wave), g_kernelAudio.getRealBufSize(),
-		    	g_channelManager);
+		    g_channelManager);
 	else
 		printLoadError_(res.status);
 }
